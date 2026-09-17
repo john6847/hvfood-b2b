@@ -1599,6 +1599,8 @@ Before considering the project complete, generate:
 
 ---
 
+
+
 # 48. DEVELOPMENT RULE
 
 Before implementing a feature:
