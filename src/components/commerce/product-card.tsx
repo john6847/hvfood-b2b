@@ -35,7 +35,7 @@ export function ProductCard({ product: p, view }: { product: CatalogProduct; vie
           list ? "min-h-36 w-40 sm:w-48" : "aspect-[4/3] w-full",
         )}
       >
-        <Link href={href} aria-label={`View ${p.name}`} className="block h-full w-full">
+        <Link href={href} aria-label={`View ${p.name}`} className="relative block h-full w-full">
           <Image
             src={p.image}
             alt={p.name}
