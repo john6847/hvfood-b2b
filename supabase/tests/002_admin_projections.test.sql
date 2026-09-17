@@ -54,11 +54,16 @@ select throws_ok($$ select * from public.admin_companies() $$, '42501', null,
 select throws_ok($$ select * from public.admin_staff_directory() $$, '42501', null,
   'customers cannot call admin_staff_directory');
 
--- Administrator without MFA is refused.
+-- Administrator without MFA is refused while the MFA switch is on.
 select pg_temp.act_as_postgres();
+create or replace function private.staff_mfa_required() returns boolean
+  language sql immutable set search_path = '' as $$ select true $$;
 select pg_temp.act_as((select id from fx where key = 'admin'), 'aal1');
 select throws_ok($$ select * from public.admin_companies() $$, '42501', null,
-  'administrator at aal1 cannot call admin_companies');
+  'administrator at aal1 cannot call admin_companies when MFA is required');
+select pg_temp.act_as_postgres();
+create or replace function private.staff_mfa_required() returns boolean
+  language sql immutable set search_path = '' as $$ select false $$;
 
 -- Administrator with MFA sees the tier assignment.
 select pg_temp.act_as_postgres();

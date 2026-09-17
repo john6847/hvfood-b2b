@@ -576,6 +576,7 @@ export type Database = {
       current_staff_context: {
         Args: never
         Returns: {
+          mfa_required: boolean
           mfa_verified: boolean
           permissions: string[]
           role_code: string

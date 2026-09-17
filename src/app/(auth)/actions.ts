@@ -20,14 +20,16 @@ const signInSchema = z.object({
 });
 
 /**
- * Decides where a freshly signed-in person goes. Staff must reach aal2
- * before the admin renders; everyone else lands in the buyer portal.
+ * Decides where a freshly signed-in person goes. Staff go through MFA
+ * only while the policy switch requires it; buyers land in their portal.
  */
 async function postSignInDestination(requestedNext: string | undefined) {
   const staff = await getStaffContext();
   if (staff) {
-    const mfa = await getMfaState();
-    if (mfa.currentLevel !== "aal2") return "/mfa";
+    if (staff.mfaRequired) {
+      const mfa = await getMfaState();
+      if (mfa.currentLevel !== "aal2") return "/mfa";
+    }
     return safeNextPath(requestedNext, "/admin");
   }
   return safeNextPath(requestedNext, "/wholesale/dashboard");

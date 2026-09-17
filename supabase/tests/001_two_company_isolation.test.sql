@@ -5,7 +5,7 @@
 
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(36);
+select plan(37);
 
 -- Helpers -----------------------------------------------------------------
 
@@ -221,15 +221,25 @@ select pg_temp.act_as((select id from fx where key = 'outsider'));
 select is((select count(*) from public.companies), 0::bigint, 'outsider sees no companies');
 select is((select count(*) from public.current_memberships()), 0::bigint, 'outsider has no memberships');
 
--- Staff without MFA --------------------------------------------------------
+-- Staff without MFA, with the MFA switch forced on for this transaction ----
 
 select pg_temp.act_as_postgres();
+create or replace function private.staff_mfa_required() returns boolean
+  language sql immutable set search_path = '' as $$ select true $$;
 select pg_temp.act_as((select id from fx where key = 'staff_admin'), 'aal1');
 
 select is((select count(*) from public.companies), 0::bigint,
-  'administrator at aal1 sees no companies (MFA required)');
+  'administrator at aal1 sees no companies when MFA is required');
 select is((select mfa_verified from public.current_staff_context()), false,
   'staff context reports MFA not verified at aal1');
+
+-- Switch off (the current default): aal1 is enough.
+select pg_temp.act_as_postgres();
+create or replace function private.staff_mfa_required() returns boolean
+  language sql immutable set search_path = '' as $$ select false $$;
+select pg_temp.act_as((select id from fx where key = 'staff_admin'), 'aal1');
+select ok((select count(*) from public.companies) >= 3,
+  'administrator at aal1 sees companies when MFA is not required');
 
 -- Staff with MFA -----------------------------------------------------------
 

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LogOut, ShieldCheck } from "lucide-react";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
@@ -6,7 +7,8 @@ import { visibleAdminNavigation } from "@/modules/identity/permissions";
 import { getCurrentUser, getProfile, getStaffContext } from "@/modules/identity/service";
 
 /**
- * Admin shell. Requires an active staff record and an MFA-verified session.
+ * Admin shell. Requires an active staff record, plus an MFA-verified
+ * session whenever the database policy switch requires one.
  * Pages call guardPermission() on top of this for their own section.
  */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -15,7 +17,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const staff = await getStaffContext();
   if (!staff) redirect("/wholesale/dashboard");
-  if (!staff.mfaVerified) redirect("/mfa");
+  if (staff.mfaRequired && !staff.mfaVerified) redirect("/mfa");
 
   const profile = await getProfile();
   const staffName =
@@ -27,10 +29,20 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <AdminSidebar items={items} staffName={staffName} roleName={staff.roleName} />
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center justify-between gap-4 border-b border-border bg-surface px-6 py-3">
-          <p className="flex items-center gap-2 text-xs text-foreground-muted">
-            <ShieldCheck className="size-3.5 text-brand-green" aria-hidden />
-            Two-step verified session
-          </p>
+          {staff.mfaVerified ? (
+            <p className="flex items-center gap-2 text-xs text-foreground-muted">
+              <ShieldCheck className="size-3.5 text-brand-green" aria-hidden />
+              Two-step verified session
+            </p>
+          ) : (
+            <Link
+              href="/mfa"
+              className="flex items-center gap-2 text-xs text-foreground-muted hover:text-foreground"
+            >
+              <ShieldCheck className="size-3.5" aria-hidden />
+              Two-step verification is optional right now. Set it up
+            </Link>
+          )}
           <form action="/auth/signout" method="post">
             <Button type="submit" variant="ghost" size="sm">
               <LogOut aria-hidden />

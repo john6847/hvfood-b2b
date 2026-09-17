@@ -29,7 +29,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Seeded sign-ins (password `Wholesale-Dev-2026`) are listed at the top of [`supabase/seed.sql`](supabase/seed.sql). Staff accounts are asked to enroll an authenticator app on first admin visit. Emails sent locally land in Mailpit at http://127.0.0.1:54324.
+Seeded sign-ins (password `Wholesale-Dev-2026`) are listed at the top of [`supabase/seed.sql`](supabase/seed.sql). Staff two-step verification is optional for now; a one-line migration makes it mandatory before launch. Emails sent locally land in Mailpit at http://127.0.0.1:54324.
 
 ## Checks
 
@@ -49,14 +49,14 @@ Staff accounts are never created through signup. With the service role key avail
 node --env-file=.env.local scripts/bootstrap-admin.ts you@company.com
 ```
 
-The person receives an invitation email to set a password, then enrolls MFA at `/mfa` before any admin data is visible.
+The person receives an invitation email to set a password. They can enroll two-step verification at `/mfa`; it becomes mandatory once the switch is turned on.
 
 ## Security posture
 
 - Every table has RLS enabled. Anonymous sessions hold no table grants.
 - Customers read only their own profile, companies, memberships, addresses and locations. Pricing tier, private details and commerce policies are never customer-readable.
 - Company owners can edit a whitelisted set of columns; status, tier and terms can only change through server commands with permission checks.
-- Staff permissions come from database role mappings and require an MFA-verified session, enforced in RLS as well as in the app.
+- Staff permissions come from database role mappings. MFA enforcement is a database switch (currently off) that both RLS and the app honor.
 - The service role key is used only in server code after explicit permission checks, never as authorization on its own.
 
 ## Phases

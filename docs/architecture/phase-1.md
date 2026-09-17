@@ -21,7 +21,7 @@ Tables match the proposed `schema.sql` with three additions: nonempty checks on 
 
 - **Column grants are the customer field whitelist.** `authenticated` can read `companies` without `pricing_tier_id`, and can update only `display_name`, `phone`, `website`, `email`. Nothing else on the table is writable through the session client, so status, tier and terms changes must go through server commands.
 - **Row policies use SECURITY DEFINER helpers** in the `private` schema with an empty search path. They read membership and staff tables without recursion.
-- **Staff require aal2.** `has_permission()` returns false unless the JWT carries `aal = aal2`, so a staff member who has not completed MFA sees nothing, even through direct API calls.
+- **Staff MFA is a switch.** `private.staff_mfa_required()` currently returns false at the owner's request, so staff sign in with a password alone. When it returns true, `has_permission()` refuses any session without `aal = aal2`, and the app sends staff through enrollment. Flip it with a one-line migration before production launch. Tests cover both positions.
 - **Staff-only columns are read through gated functions** (`admin_companies()` and friends) rather than wider grants, because a column grant cannot be scoped by role.
 
 ### Application (`src/`)
@@ -44,6 +44,7 @@ Tables match the proposed `schema.sql` with three additions: nonempty checks on 
 
 - **Production app lives at the repository root** with `src/`, matching the blueprint's folder structure. The design preview in `web/` keeps its own toolchain and is not deployed.
 - **Public signup is off** in Supabase Auth. Accounts come from invitations (Phase 2) or operator bootstrap. Note for the CLI config: `[auth.email] enable_signup` must stay true because it controls the email provider, not self-registration.
+- **Staff MFA is off for now** (migration `000700_staff_mfa_optional`). Enrollment remains available from the admin top bar. Turning it on is a launch-hardening task.
 - **Password policy**: 12 characters minimum with upper, lower and digit, enforced by Auth and mirrored in the update-password form.
 - **Typeface**: the system sans-serif stack from the preview. A brand typeface has not been chosen; that is a design decision for the brand owner before launch.
 - **Support contact details are placeholders** (`[SUPPORT EMAIL]`, `[SUPPORT PHONE]`) in `src/config/brand.ts` until operations supplies them.

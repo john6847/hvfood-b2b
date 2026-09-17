@@ -29,6 +29,8 @@ export type StaffContext = {
   roleCode: string;
   roleName: string;
   mfaVerified: boolean;
+  /** Policy switch from the database (private.staff_mfa_required). */
+  mfaRequired: boolean;
   permissions: readonly string[];
 };
 
@@ -112,8 +114,8 @@ export const getMfaState = cache(async (): Promise<MfaState> => {
 
 /**
  * Staff context for the signed-in person, or null for non-staff.
- * `mfaVerified` comes from the JWT's assurance level; RLS applies the same
- * rule, so a staff member at aal1 sees nothing until they verify.
+ * `mfaVerified` comes from the JWT's assurance level and `mfaRequired` from
+ * the database policy switch; RLS applies the same rule.
  */
 export const getStaffContext = cache(async (): Promise<StaffContext | null> => {
   await requireUser();
@@ -127,15 +129,16 @@ export const getStaffContext = cache(async (): Promise<StaffContext | null> => {
     roleCode: row.role_code,
     roleName: row.role_name,
     mfaVerified: row.mfa_verified,
+    mfaRequired: row.mfa_required,
     permissions: row.permissions ?? [],
   };
 });
 
-/** Staff member with a verified MFA session. */
+/** Staff member whose session meets the current MFA policy. */
 export async function requireStaff(): Promise<StaffContext> {
   const staff = await getStaffContext();
   if (!staff) throw new ForbiddenError("Staff access only.");
-  if (!staff.mfaVerified) throw new MfaRequiredError();
+  if (staff.mfaRequired && !staff.mfaVerified) throw new MfaRequiredError();
   return staff;
 }
 
