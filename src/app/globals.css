@@ -1,0 +1,188 @@
+@import "tailwindcss";
+
+/*
+  Design tokens carried over from the approved design preview (web/).
+  Warm off-white surfaces, Horizon Vert orange as the single primary,
+  forest green for positive states, charcoal text, small radii, fine rules.
+  Every component uses these tokens; no hardcoded colors elsewhere.
+*/
+:root {
+  color-scheme: light;
+
+  --background: #fafaf8;
+  --surface: #ffffff;
+  --surface-muted: #f8f9f5;
+  --foreground: #242824;
+  --foreground-muted: #70766f;
+  --foreground-subtle: #96a087;
+
+  --primary: #cc421c;
+  --primary-hover: #b53a18;
+  --primary-foreground: #ffffff;
+  --brand-orange: #ed5728;
+  --brand-green: #376044;
+
+  --secondary: #eeefeb;
+  --muted: #f2f3ef;
+  --accent: #f8ebe4;
+  --border: #dedfd8;
+  --border-strong: #c9cbc3;
+  --ring: #c44920;
+
+  --success-bg: #eef3ea;
+  --success-fg: #376044;
+  --warning-bg: #fbf1e0;
+  --warning-fg: #8a5a12;
+  --danger-bg: #f9e9e6;
+  --danger-fg: #b12d22;
+  --info-bg: #eaeef2;
+  --info-fg: #3f5567;
+
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 5px;
+
+  --shadow-sm: 0 1px 2px rgb(36 40 36 / 0.06);
+  --shadow-md: 0 4px 16px rgb(36 40 36 / 0.08);
+
+  --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --text-2xs: 0.5625rem; /* 9px eyebrow, table headers */
+  --text-xs: 0.6875rem; /* 11px */
+  --text-sm: 0.75rem; /* 12px */
+  --text-base: 0.875rem; /* 14px */
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.75rem;
+  --text-2xl: 2.5rem;
+
+  --header-height: 4rem;
+  --sidebar-width: 14rem;
+  --content-max: 94rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-foreground: var(--foreground);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-foreground-subtle: var(--foreground-subtle);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-brand-orange: var(--brand-orange);
+  --color-brand-green: var(--brand-green);
+  --color-secondary: var(--secondary);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-ring: var(--ring);
+  --color-success-bg: var(--success-bg);
+  --color-success-fg: var(--success-fg);
+  --color-warning-bg: var(--warning-bg);
+  --color-warning-fg: var(--warning-fg);
+  --color-danger-bg: var(--danger-bg);
+  --color-danger-fg: var(--danger-fg);
+  --color-info-bg: var(--info-bg);
+  --color-info-fg: var(--info-fg);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --text-2xs: var(--text-2xs);
+  --text-xs: var(--text-xs);
+  --text-sm: var(--text-sm);
+  --text-base: var(--text-base);
+  --text-md: var(--text-md);
+  --text-lg: var(--text-lg);
+  --text-xl: var(--text-xl);
+  --text-2xl: var(--text-2xl);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    font-family: var(--font-sans);
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font-size: var(--text-base);
+    line-height: 1.5;
+  }
+
+  h1,
+  h2,
+  h3,
+  p {
+    margin: 0;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button {
+    font: inherit;
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  table {
+    border-collapse: collapse;
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  .eyebrow {
+    font-size: var(--text-2xs);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--foreground-muted);
+  }
+
+  .skip-link {
+    position: absolute;
+    left: 0.5rem;
+    top: -3rem;
+    z-index: 100;
+    padding: 0.5rem 0.75rem;
+    background: var(--foreground);
+    color: var(--surface);
+    border-radius: var(--radius-md);
+  }
+  .skip-link:focus {
+    top: 0.5rem;
+  }
+}

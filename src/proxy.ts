@@ -1,0 +1,75 @@
+import { NextResponse, type NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
+import { publicEnv } from "@/lib/env";
+
+/**
+ * Refreshes the Supabase session cookie on every request and keeps
+ * unauthenticated visitors out of the portal and admin areas.
+ *
+ * This is a convenience redirect, not the authorization boundary. Every
+ * layout re-checks identity, membership and staff status server-side, and
+ * every database read is governed by RLS.
+ */
+export async function proxy(request: NextRequest) {
+  let response = NextResponse.next({ request });
+
+  const supabase = createServerClient(
+    publicEnv.NEXT_PUBLIC_SUPABASE_URL,
+    publicEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          for (const { name, value } of cookiesToSet) {
+            request.cookies.set(name, value);
+          }
+          response = NextResponse.next({ request });
+          for (const { name, value, options } of cookiesToSet) {
+            response.cookies.set(name, value, options);
+          }
+        },
+      },
+    },
+  );
+
+  // getUser() validates against Auth; never trust getSession() alone here.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { pathname } = request.nextUrl;
+  const protectedArea =
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/mfa") ||
+    (pathname.startsWith("/wholesale") && !pathname.startsWith("/wholesale/apply"));
+
+  if (!user && protectedArea) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("next", pathname);
+    return NextResponse.redirect(url);
+  }
+
+  if (user && (pathname === "/login" || pathname === "/")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/wholesale/dashboard";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
+  // Personalized responses must never be cached across users.
+  if (user) {
+    response.headers.set("Cache-Control", "private, no-store");
+  }
+
+  return response;
+}
+
+export const config = {
+  matcher: [
+    // Skip static assets and images; run on everything else.
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+  ],
+};
