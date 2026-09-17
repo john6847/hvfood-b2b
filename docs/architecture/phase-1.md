@@ -49,6 +49,10 @@ Tables match the proposed `schema.sql` with three additions: nonempty checks on 
 - **Typeface**: the system sans-serif stack from the preview. A brand typeface has not been chosen; that is a design decision for the brand owner before launch.
 - **Support contact details are placeholders** (`[SUPPORT EMAIL]`, `[SUPPORT PHONE]`) in `src/config/brand.ts` until operations supplies them.
 
+### Static catalog (interim)
+
+At the owner's request the catalog and product pages show the twelve products from the design preview as static fixtures (`src/modules/catalog/fixtures.ts`, images in `public/products`). Filtering, sorting, search, grid and list views and the case-quantity price math are real; the data is not. Prices render only for approved members. Phase 3 replaces the fixtures with database rows and Phase 4 with the pricing engine; the card's "View details" action becomes "Add to cart" in Phase 5.
+
 ## Not in this phase
 
 Application form and review, invitations and activation, company editing, catalog, pricing, cart, orders, payments, shipping, integrations, notifications, audit log writes. Each has a placeholder that says which release fills it.
