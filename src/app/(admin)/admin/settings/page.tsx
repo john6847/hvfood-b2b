@@ -4,8 +4,8 @@ import { PageHeading } from "@/components/ui/page-heading";
 import { Panel, PanelBody, PanelHeader } from "@/components/ui/panel";
 import { Table, TableScroll, Td, Th, Tr } from "@/components/ui/data-table";
 import { StatusPill } from "@/components/ui/status-pill";
-import { createSessionClient } from "@/lib/supabase/server";
 import { formatDate } from "@/lib/utils";
+import { staffDirectory } from "@/modules/accounts/queries";
 import { hasPermission } from "@/modules/identity/permissions";
 import { guardStaff } from "@/modules/identity/guards";
 
@@ -25,8 +25,7 @@ export default async function SettingsPage() {
   const staff = await guardStaff();
   const canManageStaff = hasPermission(staff.permissions, "staff.manage");
 
-  const supabase = await createSessionClient();
-  const directory = canManageStaff ? await supabase.rpc("admin_staff_directory") : null;
+  const directory = canManageStaff ? await staffDirectory() : [];
 
   return (
     <>
@@ -43,10 +42,6 @@ export default async function SettingsPage() {
             <PanelBody>
               <EmptyState title="Administrator only" description="Staff configuration needs the staff.manage permission." />
             </PanelBody>
-          ) : directory?.error ? (
-            <PanelBody>
-              <EmptyState title="Could not load staff" description={directory.error.message} />
-            </PanelBody>
           ) : (
             <TableScroll>
               <Table>
@@ -59,21 +54,21 @@ export default async function SettingsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(directory?.data ?? []).map((row) => (
-                    <Tr key={row.staff_user_id}>
+                  {directory.map((row) => (
+                    <Tr key={row.staffUserId}>
                       <Td>
                         <span className="font-medium">
-                          {[row.first_name, row.last_name].filter(Boolean).join(" ") || row.email}
+                          {[row.firstName, row.lastName].filter(Boolean).join(" ") || row.email}
                         </span>
                         <span className="block text-xs text-foreground-muted">{row.email}</span>
                       </Td>
-                      <Td>{row.role_name}</Td>
+                      <Td>{row.roleName}</Td>
                       <Td>
                         <StatusPill tone={row.active ? "success" : "danger"}>
                           {row.active ? "Active" : "Inactive"}
                         </StatusPill>
                       </Td>
-                      <Td className="text-foreground-muted">{formatDate(row.created_at)}</Td>
+                      <Td className="text-foreground-muted">{formatDate(row.createdAt)}</Td>
                     </Tr>
                   ))}
                 </tbody>

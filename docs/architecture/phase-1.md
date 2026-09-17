@@ -53,6 +53,12 @@ Tables match the proposed `schema.sql` with three additions: nonempty checks on 
 
 At the owner's request the catalog and product pages show the twelve products from the design preview as static fixtures (`src/modules/catalog/fixtures.ts`, images in `public/products`). Filtering, sorting, search, grid and list views and the case-quantity price math are real; the data is not. Prices render only for approved members. Phase 3 replaces the fixtures with database rows and Phase 4 with the pricing engine; the card's "View details" action becomes "Add to cart" in Phase 5.
 
+### Static preview mode
+
+The app runs without a database. `STATIC_PREVIEW` in `lib/env` is true when no Supabase project is configured, and the account, order and identity modules each serve fixtures on that path. A banner marks every page, sign-in redirects into the portal, and writes do nothing.
+
+This exists so the design can be deployed and reviewed before the hosted database is provisioned. It is not a fallback: when Supabase is configured, the fixture paths are unreachable and a misconfiguration raises an error rather than silently serving fake data. Both paths are exercised before release, and a test asserts the fixtures stay internally consistent with the catalog.
+
 ## Not in this phase
 
 Application form and review, invitations and activation, company editing, catalog, pricing, cart, orders, payments, shipping, integrations, notifications, audit log writes. Each has a placeholder that says which release fills it.

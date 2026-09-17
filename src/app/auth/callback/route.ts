@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { STATIC_PREVIEW } from "@/lib/env";
 import { createSessionClient } from "@/lib/supabase/server";
 import { safeNextPath } from "@/lib/utils";
 
@@ -8,6 +9,8 @@ import { safeNextPath } from "@/lib/utils";
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
+  if (STATIC_PREVIEW) return NextResponse.redirect(`${origin}/wholesale/dashboard`);
+
   const code = searchParams.get("code");
   const next = safeNextPath(searchParams.get("next"), "/wholesale/dashboard");
 

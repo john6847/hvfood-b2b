@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { STATIC_PREVIEW } from "@/lib/env";
 import { safeNextPath } from "@/lib/utils";
 import { LoginForm } from "./login-form";
 
@@ -10,6 +12,7 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ next?: string }>;
 }) {
+  if (STATIC_PREVIEW) redirect("/wholesale/dashboard");
   const { next } = await searchParams;
   return (
     <div>

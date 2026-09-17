@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { publicEnv } from "@/lib/env";
+import { STATIC_PREVIEW, supabaseEnv } from "@/lib/env";
 
 /**
  * Refreshes the Supabase session cookie on every request and keeps
@@ -9,37 +9,49 @@ import { publicEnv } from "@/lib/env";
  * This is a convenience redirect, not the authorization boundary. Every
  * layout re-checks identity, membership and staff status server-side, and
  * every database read is governed by RLS.
+ *
+ * In static preview there is no session to refresh and nothing to protect,
+ * so the request passes straight through.
  */
 export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request });
+  const { pathname } = request.nextUrl;
 
-  const supabase = createServerClient(
-    publicEnv.NEXT_PUBLIC_SUPABASE_URL,
-    publicEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          for (const { name, value } of cookiesToSet) {
-            request.cookies.set(name, value);
-          }
-          response = NextResponse.next({ request });
-          for (const { name, value, options } of cookiesToSet) {
-            response.cookies.set(name, value, options);
-          }
-        },
+  if (STATIC_PREVIEW) {
+    // Sign-in has no meaning without a database; send it to the portal.
+    if (pathname === "/login" || pathname === "/mfa") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/wholesale/dashboard";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next({ request });
+  }
+
+  let response = NextResponse.next({ request });
+  const { url: supabaseUrl, anonKey } = supabaseEnv();
+
+  const supabase = createServerClient(supabaseUrl, anonKey, {
+    cookies: {
+      getAll() {
+        return request.cookies.getAll();
+      },
+      setAll(cookiesToSet) {
+        for (const { name, value } of cookiesToSet) {
+          request.cookies.set(name, value);
+        }
+        response = NextResponse.next({ request });
+        for (const { name, value, options } of cookiesToSet) {
+          response.cookies.set(name, value, options);
+        }
       },
     },
-  );
+  });
 
   // getUser() validates against Auth; never trust getSession() alone here.
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
   const protectedArea =
     pathname.startsWith("/admin") ||
     pathname.startsWith("/mfa") ||

@@ -11,6 +11,8 @@ type Props = {
   active: Membership | null;
   personName: string;
   approved: boolean;
+  /** False in static preview, where there is no session to end. */
+  canSignOut: boolean;
 };
 
 /**
@@ -18,7 +20,7 @@ type Props = {
  * company switcher, account) and a nav row (Shop, Buy again, Saved lists,
  * Orders, Quick order, Cart). Cart and search arrive with the catalog phase.
  */
-export function PortalHeader({ memberships, active, personName, approved }: Props) {
+export function PortalHeader({ memberships, active, personName, approved, canSignOut }: Props) {
   return (
     <header className="border-b border-border bg-surface">
       <div className="mx-auto flex max-w-(--content-max) flex-wrap items-center justify-between gap-4 px-6 py-4">
@@ -30,12 +32,14 @@ export function PortalHeader({ memberships, active, personName, approved }: Prop
               <p className="text-2xs uppercase tracking-wider text-foreground-muted">Signed in as</p>
               <p className="text-sm font-medium text-foreground">{personName}</p>
             </div>
-            <form action="/auth/signout" method="post">
-              <Button type="submit" variant="ghost" size="sm" aria-label="Sign out">
-                <LogOut aria-hidden />
-                <span className="hidden md:inline">Sign out</span>
-              </Button>
-            </form>
+            {canSignOut ? (
+              <form action="/auth/signout" method="post">
+                <Button type="submit" variant="ghost" size="sm" aria-label="Sign out">
+                  <LogOut aria-hidden />
+                  <span className="hidden md:inline">Sign out</span>
+                </Button>
+              </form>
+            ) : null}
           </div>
         </div>
       </div>

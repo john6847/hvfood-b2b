@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LogOut, ShieldCheck } from "lucide-react";
 import { AdminSidebar } from "@/components/admin/admin-sidebar";
+import { STATIC_PREVIEW } from "@/lib/env";
 import { Button } from "@/components/ui/button";
 import { visibleAdminNavigation } from "@/modules/identity/permissions";
 import { getCurrentUser, getProfile, getStaffContext } from "@/modules/identity/service";
@@ -29,7 +30,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <AdminSidebar items={items} staffName={staffName} roleName={staff.roleName} />
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center justify-between gap-4 border-b border-border bg-surface px-6 py-3">
-          {staff.mfaVerified ? (
+          {STATIC_PREVIEW ? (
+            <p className="text-xs text-foreground-muted">
+              Sample operations data. Sign-in and staff roles activate with the database.
+            </p>
+          ) : staff.mfaVerified ? (
             <p className="flex items-center gap-2 text-xs text-foreground-muted">
               <ShieldCheck className="size-3.5 text-brand-green" aria-hidden />
               Two-step verified session
@@ -43,12 +48,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               Two-step verification is optional right now. Set it up
             </Link>
           )}
-          <form action="/auth/signout" method="post">
-            <Button type="submit" variant="ghost" size="sm">
-              <LogOut aria-hidden />
-              Sign out
-            </Button>
-          </form>
+          {STATIC_PREVIEW ? null : (
+            <form action="/auth/signout" method="post">
+              <Button type="submit" variant="ghost" size="sm">
+                <LogOut aria-hidden />
+                Sign out
+              </Button>
+            </form>
+          )}
         </div>
         <main id="main" className="flex-1 px-6 py-8">
           <div className="mx-auto max-w-(--content-max)">{children}</div>

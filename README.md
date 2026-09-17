@@ -17,12 +17,33 @@ US-first wholesale commerce for approved company accounts: a buyer portal built 
 
 Start with the [architecture blueprint](docs/architecture/blueprint.md) and the [Phase 1 notes](docs/architecture/phase-1.md).
 
+## Two modes
+
+The app runs with or without a database, decided by whether Supabase is configured:
+
+| Mode | When | What you get |
+| --- | --- | --- |
+| **Static preview** | No `NEXT_PUBLIC_SUPABASE_*` variables | Sample companies, orders and catalog from fixtures. No sign-in, no writes. A banner marks every page. Deploys anywhere with zero configuration. |
+| **Connected** | Those variables are set | Real authentication, real data, row-level security in force. |
+
+Static preview is never a fallback for a broken connection. If Supabase is configured, every request goes through it and a misconfiguration is an error rather than a silent downgrade to fake data.
+
+Fixtures live in `src/modules/demo/fixtures.ts` and `src/modules/catalog/fixtures.ts`.
+
 ## Local development
 
 Requirements: Node 22+, Docker, the Supabase CLI.
 
+Static preview needs nothing but the app:
+
 ```bash
 npm install
+npm run dev
+```
+
+For the connected mode, add a database:
+
+```bash
 npm run db:start          # local Supabase: applies migrations and seed
 cp .env.example .env.local
 # fill NEXT_PUBLIC_SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY from `supabase status`

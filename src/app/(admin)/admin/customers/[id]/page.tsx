@@ -2,51 +2,39 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { z } from "zod";
+import { OrderTable } from "@/components/commerce/order-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Notice } from "@/components/ui/notice";
 import { PageHeading } from "@/components/ui/page-heading";
 import { DefinitionList, Panel, PanelBody, PanelHeader } from "@/components/ui/panel";
 import { CompanyStatusPill, StatusPill } from "@/components/ui/status-pill";
-import { createSessionClient } from "@/lib/supabase/server";
 import { formatDate, formatMinorUsd } from "@/lib/utils";
-import { hasPermission } from "@/modules/identity/permissions";
+import { getCompanyRecord } from "@/modules/accounts/queries";
 import { guardPermission } from "@/modules/identity/guards";
+import { hasPermission } from "@/modules/identity/permissions";
+import { listCompanyOrders } from "@/modules/orders/queries";
 
 export const metadata: Metadata = { title: "Customer" };
 
 /**
- * Company record page: details, tier, people, addresses, locations, and
- * the staff-only private details and commerce policy. Status, tier and
- * terms changes are Phase 2 commands; this page reads only.
+ * Company record: details, tier, people, addresses, locations, orders, and
+ * the staff-only private notes and commerce policy. Status, tier and terms
+ * changes are Phase 2 commands; this page reads only.
  */
-export default async function CustomerDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const staff = await guardPermission("accounts.read");
   const { id } = await params;
-  if (!z.uuid().safeParse(id).success) notFound();
 
-  const supabase = await createSessionClient();
-  const [overview, members, privateDetails, policy, addresses, locations] = await Promise.all([
-    supabase.rpc("admin_companies"),
-    supabase
-      .from("company_users")
-      .select("id, role, active, created_at, profiles(first_name, last_name, email)")
-      .eq("company_id", id)
-      .order("created_at"),
-    supabase.from("company_private_details").select("*").eq("company_id", id).maybeSingle(),
-    hasPermission(staff.permissions, "finance.read") || hasPermission(staff.permissions, "accounts.read")
-      ? supabase.from("company_commerce_policies").select("*").eq("company_id", id).maybeSingle()
-      : Promise.resolve({ data: null }),
-    supabase.from("company_addresses").select("*").eq("company_id", id).is("archived_at", null),
-    supabase.from("company_locations").select("*").eq("company_id", id),
-  ]);
+  const record = await getCompanyRecord(id);
+  if (!record) notFound();
 
-  const company = (overview.data ?? []).find((row) => row.id === id);
-  if (!company) notFound();
+  const { summary, members, addresses, locations, policy, privateDetails } = record;
+  const canSeeFinance =
+    hasPermission(staff.permissions, "finance.read") ||
+    hasPermission(staff.permissions, "accounts.read");
+  const orders = hasPermission(staff.permissions, "orders.read")
+    ? await listCompanyOrders(id)
+    : [];
 
   return (
     <>
@@ -58,10 +46,10 @@ export default async function CustomerDetailPage({
         Customers
       </Link>
       <PageHeading
-        eyebrow={company.legal_name}
-        title={company.display_name}
-        description={`Customer since ${formatDate(company.created_at)}.`}
-        action={<CompanyStatusPill status={company.status} />}
+        eyebrow={summary.legalName}
+        title={summary.displayName}
+        description={`Customer since ${formatDate(summary.createdAt)}.`}
+        action={<CompanyStatusPill status={summary.status} />}
       />
 
       <Notice tone="info" className="mb-6">
@@ -76,41 +64,57 @@ export default async function CustomerDetailPage({
             <PanelBody>
               <DefinitionList
                 items={[
-                  { term: "Legal name", value: company.legal_name },
-                  { term: "Display name", value: company.display_name },
-                  { term: "Email", value: company.email },
-                  { term: "Phone", value: company.phone ?? "Not provided" },
-                  { term: "Website", value: company.website ?? "Not provided" },
-                  { term: "Pricing tier", value: company.pricing_tier_name ?? "Unassigned" },
-                  { term: "Record version", value: String(company.version) },
+                  { term: "Legal name", value: summary.legalName },
+                  { term: "Display name", value: summary.displayName },
+                  { term: "Email", value: summary.email },
+                  { term: "Phone", value: summary.phone ?? "Not provided" },
+                  { term: "Website", value: summary.website ?? "Not provided" },
+                  { term: "Pricing tier", value: summary.pricingTierName ?? "Unassigned" },
+                  { term: "Record version", value: String(summary.version) },
                 ]}
               />
             </PanelBody>
           </Panel>
 
           <Panel>
+            <PanelHeader title="Orders" description="Everything this company has bought." />
+            {orders.length === 0 ? (
+              <PanelBody>
+                <EmptyState title="No orders yet" />
+              </PanelBody>
+            ) : (
+              <OrderTable orders={orders} basePath="/admin/orders" />
+            )}
+          </Panel>
+
+          <Panel>
             <PanelHeader title="Addresses" />
             <PanelBody>
-              {(addresses.data ?? []).length === 0 ? (
+              {addresses.length === 0 ? (
                 <EmptyState title="No addresses on file" />
               ) : (
                 <ul className="divide-y divide-border">
-                  {(addresses.data ?? []).map((a) => (
-                    <li key={a.id} className="flex flex-wrap items-start justify-between gap-3 py-3 text-sm">
+                  {addresses.map((a) => (
+                    <li
+                      key={a.id}
+                      className="flex flex-wrap items-start justify-between gap-3 py-3 text-sm"
+                    >
                       <div>
                         <p className="font-medium text-foreground">{a.label}</p>
                         <p className="text-foreground-muted">
-                          {a.contact_name}
+                          {a.contactName}
                           {a.phone ? ` · ${a.phone}` : ""}
                         </p>
                         <p className="text-foreground-muted">
                           {a.line1}
-                          {a.line2 ? `, ${a.line2}` : ""}, {a.city}, {a.region} {a.postal_code}
+                          {a.line2 ? `, ${a.line2}` : ""}, {a.city}, {a.region} {a.postalCode}
                         </p>
                       </div>
                       <span className="flex gap-1">
-                        {a.is_billing ? <StatusPill tone="info">Billing</StatusPill> : null}
-                        {a.is_default_shipping ? <StatusPill tone="success">Default shipping</StatusPill> : null}
+                        {a.isBilling ? <StatusPill tone="info">Billing</StatusPill> : null}
+                        {a.isDefaultShipping ? (
+                          <StatusPill tone="success">Default shipping</StatusPill>
+                        ) : null}
                       </span>
                     </li>
                   ))}
@@ -122,25 +126,25 @@ export default async function CustomerDetailPage({
           <Panel>
             <PanelHeader title="Delivery locations" />
             <PanelBody>
-              {(locations.data ?? []).length === 0 ? (
+              {locations.length === 0 ? (
                 <EmptyState title="No delivery locations" />
               ) : (
                 <ul className="divide-y divide-border">
-                  {(locations.data ?? []).map((l) => (
+                  {locations.map((l) => (
                     <li key={l.id} className="py-3 text-sm">
                       <p className="font-medium text-foreground">{l.name}</p>
                       <p className="text-foreground-muted">
                         {[
-                          l.has_dock ? "Dock" : "No dock",
-                          l.liftgate_required ? "Liftgate required" : null,
-                          l.appointment_required ? "Appointment required" : null,
-                          l.is_residential ? "Residential" : "Commercial",
+                          l.hasDock ? "Dock" : "No dock",
+                          l.liftgateRequired ? "Liftgate required" : null,
+                          l.appointmentRequired ? "Appointment required" : null,
+                          l.isResidential ? "Residential" : "Commercial",
                         ]
                           .filter(Boolean)
                           .join(" · ")}
                       </p>
-                      {l.receiving_instructions ? (
-                        <p className="mt-1 text-foreground-muted">{l.receiving_instructions}</p>
+                      {l.receivingInstructions ? (
+                        <p className="mt-1 text-foreground-muted">{l.receivingInstructions}</p>
                       ) : null}
                     </li>
                   ))}
@@ -155,15 +159,20 @@ export default async function CustomerDetailPage({
             <PanelHeader title="People" />
             <PanelBody className="p-0">
               <ul className="divide-y divide-border">
-                {(members.data ?? []).map((m) => {
-                  const name = [m.profiles?.first_name, m.profiles?.last_name].filter(Boolean).join(" ");
+                {members.map((m) => {
+                  const name = [m.firstName, m.lastName].filter(Boolean).join(" ");
                   return (
-                    <li key={m.id} className="flex items-center justify-between gap-3 px-5 py-3 text-sm">
+                    <li
+                      key={m.id}
+                      className="flex items-center justify-between gap-3 px-5 py-3 text-sm"
+                    >
                       <div className="min-w-0">
-                        <p className="truncate font-medium text-foreground">{name || m.profiles?.email}</p>
-                        <p className="truncate text-xs text-foreground-muted">{m.profiles?.email}</p>
+                        <p className="truncate font-medium text-foreground">{name || m.email}</p>
+                        <p className="truncate text-xs text-foreground-muted">{m.email}</p>
                       </div>
-                      <StatusPill tone={m.active ? (m.role === "OWNER" ? "info" : "neutral") : "danger"}>
+                      <StatusPill
+                        tone={m.active ? (m.role === "OWNER" ? "info" : "neutral") : "danger"}
+                      >
                         {m.active ? m.role.toLowerCase() : "inactive"}
                       </StatusPill>
                     </li>
@@ -176,33 +185,40 @@ export default async function CustomerDetailPage({
           <Panel>
             <PanelHeader title="Commerce policy" description="Payment methods and terms." />
             <PanelBody>
-              {policy.data ? (
+              {canSeeFinance && policy ? (
                 <DefinitionList
                   items={[
                     {
                       term: "Payment methods",
-                      value: [
-                        policy.data.allow_card ? "Card" : null,
-                        policy.data.allow_ach ? "ACH" : null,
-                        policy.data.allow_manual ? "Manual" : null,
-                        policy.data.allow_terms ? `Net ${policy.data.payment_terms_days}` : null,
-                      ]
-                        .filter(Boolean)
-                        .join(", ") || "None",
+                      value:
+                        [
+                          policy.allowCard ? "Card" : null,
+                          policy.allowAch ? "ACH" : null,
+                          policy.allowManual ? "Manual" : null,
+                          policy.allowTerms ? `Net ${policy.paymentTermsDays}` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(", ") || "None",
                     },
-                    { term: "Credit limit", value: formatMinorUsd(policy.data.credit_limit_minor) },
+                    { term: "Credit limit", value: formatMinorUsd(policy.creditLimitMinor) },
                     {
                       term: "Order minimum",
                       value:
-                        policy.data.order_minimum_minor === null
+                        policy.orderMinimumMinor === null
                           ? "Default"
-                          : formatMinorUsd(policy.data.order_minimum_minor),
+                          : formatMinorUsd(policy.orderMinimumMinor),
                     },
-                    { term: "Release policy", value: policy.data.release_policy.replaceAll("_", " ").toLowerCase() },
+                    {
+                      term: "Release policy",
+                      value: policy.releasePolicy.replaceAll("_", " ").toLowerCase(),
+                    },
                   ]}
                 />
               ) : (
-                <EmptyState title="No policy set" description="Defaults apply until finance configures this company." />
+                <EmptyState
+                  title="No policy set"
+                  description="Defaults apply until finance configures this company."
+                />
               )}
             </PanelBody>
           </Panel>
@@ -210,12 +226,12 @@ export default async function CustomerDetailPage({
           <Panel>
             <PanelHeader title="Internal notes" description="Never shown to the customer." />
             <PanelBody>
-              {privateDetails.data ? (
+              {privateDetails ? (
                 <DefinitionList
                   items={[
-                    { term: "Business number", value: privateDetails.data.business_number ?? "Not recorded" },
-                    { term: "Tax number", value: privateDetails.data.tax_number ?? "Not recorded" },
-                    { term: "Notes", value: privateDetails.data.internal_notes ?? "" },
+                    { term: "Business number", value: privateDetails.businessNumber ?? "Not recorded" },
+                    { term: "Tax number", value: privateDetails.taxNumber ?? "Not recorded" },
+                    { term: "Notes", value: privateDetails.internalNotes ?? "" },
                   ]}
                 />
               ) : (

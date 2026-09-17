@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { STATIC_PREVIEW } from "@/lib/env";
 import { getCurrentUser, getMfaState, getStaffContext } from "@/modules/identity/service";
 import { MfaPanel } from "./mfa-panel";
 
@@ -18,6 +19,7 @@ export default async function MfaPage({
 }: {
   searchParams: Promise<{ setup?: string }>;
 }) {
+  if (STATIC_PREVIEW) redirect("/admin");
   const user = await getCurrentUser();
   if (!user) redirect("/login?next=/admin");
 

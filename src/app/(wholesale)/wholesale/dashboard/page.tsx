@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ClipboardList, Package, RotateCcw, Store } from "lucide-react";
+import { OrderTable } from "@/components/commerce/order-table";
 import { ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Notice } from "@/components/ui/notice";
@@ -9,6 +10,7 @@ import { CompanyStatusPill } from "@/components/ui/status-pill";
 import { brand } from "@/config/brand";
 import { accessStateFor } from "@/modules/identity/company-access";
 import { getActiveMembership, getProfile } from "@/modules/identity/service";
+import { listCompanyOrders } from "@/modules/orders/queries";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -42,8 +44,8 @@ export default async function DashboardPage() {
           description="Our wholesale team is reviewing your business details. You will get an email when a decision is made."
         />
         <Notice tone="warning" title="Wholesale pricing is available to approved customers">
-          Prices, the catalog and ordering unlock once your company is approved. Nothing else
-          is needed from you right now.
+          Prices, the catalog and ordering unlock once your company is approved. Nothing else is
+          needed from you right now.
         </Notice>
       </>
     );
@@ -66,15 +68,16 @@ export default async function DashboardPage() {
 
   if (state === "rejected") {
     return (
-      <>
-        <PageHeading
-          eyebrow={membership?.companyDisplayName}
-          title="This application was not approved."
-          description="The decision email explains the next steps. You can reply to it with questions."
-        />
-      </>
+      <PageHeading
+        eyebrow={membership?.companyDisplayName}
+        title="This application was not approved."
+        description="The decision email explains the next steps. You can reply to it with questions."
+      />
     );
   }
+
+  const orders = membership ? await listCompanyOrders(membership.companyId) : [];
+  const recent = orders.slice(0, 4);
 
   return (
     <>
@@ -122,12 +125,16 @@ export default async function DashboardPage() {
             </ButtonLink>
           }
         />
-        <PanelBody>
-          <EmptyState
-            title="No orders yet"
-            description="Ordering opens with the catalog and purchasing releases. Your first order will appear here with its payment and shipping status."
-          />
-        </PanelBody>
+        {recent.length === 0 ? (
+          <PanelBody>
+            <EmptyState
+              title="No orders yet"
+              description="Ordering opens with the catalog and purchasing releases. Your first order will appear here with its payment and shipping status."
+            />
+          </PanelBody>
+        ) : (
+          <OrderTable orders={recent} basePath="/wholesale/orders" />
+        )}
       </Panel>
     </>
   );

@@ -1,7 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
-import { publicEnv } from "@/lib/env";
+import { supabaseEnv } from "@/lib/env";
 import type { Database } from "./database.types";
 
 /**
@@ -11,9 +11,11 @@ import type { Database } from "./database.types";
 export async function createSessionClient() {
   const cookieStore = await cookies();
 
+  const { url, anonKey } = supabaseEnv();
+
   return createServerClient<Database>(
-    publicEnv.NEXT_PUBLIC_SUPABASE_URL,
-    publicEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    url,
+    anonKey,
     {
       cookies: {
         getAll() {

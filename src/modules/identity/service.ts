@@ -1,28 +1,38 @@
 import "server-only";
 import { cache } from "react";
 import { cookies } from "next/headers";
-import type { User } from "@supabase/supabase-js";
+import { STATIC_PREVIEW } from "@/lib/env";
 import { createSessionClient } from "@/lib/supabase/server";
+import { ForbiddenError, MfaRequiredError, UnauthenticatedError } from "@/lib/errors";
 import {
-  ForbiddenError,
-  MfaRequiredError,
-  UnauthenticatedError,
-} from "@/lib/errors";
+  DEMO_ACTIVE_COMPANY_ID,
+  DEMO_MEMBERSHIPS,
+  DEMO_PROFILE,
+  DEMO_STAFF,
+  DEMO_USER,
+} from "@/modules/demo/fixtures";
 import {
   resolveActiveMembership,
   type CompanyRole,
   type CompanyStatus,
   type Membership,
 } from "./company-access";
-import { hasPermission, type Permission } from "./permissions";
+import { PERMISSION_CODES, hasPermission, type Permission } from "./permissions";
 
 /**
  * Identity module: the only place server code asks "who is this and what
- * may they do". Everything is derived from the verified session and the
- * database, never from client-supplied ids or user metadata.
+ * may they do". On the connected path everything is derived from the
+ * verified session and the database, never from client-supplied ids or
+ * user metadata.
+ *
+ * In static preview (no Supabase configured) these return fixtures so the
+ * design can be reviewed without a database. That path is unreachable the
+ * moment a Supabase project is configured.
  */
 
 export const ACTIVE_COMPANY_COOKIE = "hv_company";
+
+export type SessionUser = { id: string; email: string | null };
 
 export type StaffContext = {
   staffUserId: string;
@@ -35,27 +45,29 @@ export type StaffContext = {
 };
 
 export type MfaState = {
-  /** Assurance level of the current session. */
   currentLevel: "aal1" | "aal2";
-  /** Highest level the user can reach: aal2 means a factor is enrolled. */
   nextLevel: "aal1" | "aal2";
 };
 
-export const getCurrentUser = cache(async (): Promise<User | null> => {
+export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
+  if (STATIC_PREVIEW) return { id: DEMO_USER.id, email: DEMO_USER.email };
+
   const supabase = await createSessionClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  return user;
+  return user ? { id: user.id, email: user.email ?? null } : null;
 });
 
-export async function requireUser(): Promise<User> {
+export async function requireUser(): Promise<SessionUser> {
   const user = await getCurrentUser();
   if (!user) throw new UnauthenticatedError();
   return user;
 }
 
 export const getProfile = cache(async () => {
+  if (STATIC_PREVIEW) return DEMO_PROFILE;
+
   const user = await requireUser();
   const supabase = await createSessionClient();
   const { data, error } = await supabase
@@ -67,8 +79,10 @@ export const getProfile = cache(async () => {
   return data;
 });
 
-/** Every active membership for the signed-in person, ordered by company. */
+/** Every active membership for the signed-in person. */
 export const getMemberships = cache(async (): Promise<Membership[]> => {
+  if (STATIC_PREVIEW) return DEMO_MEMBERSHIPS;
+
   await requireUser();
   const supabase = await createSessionClient();
   const { data, error } = await supabase.rpc("current_memberships");
@@ -88,6 +102,9 @@ export const getMemberships = cache(async (): Promise<Membership[]> => {
  */
 export const getActiveMembership = cache(async (): Promise<Membership | null> => {
   const memberships = await getMemberships();
+  if (STATIC_PREVIEW) {
+    return resolveActiveMembership(memberships, DEMO_ACTIVE_COMPANY_ID);
+  }
   const cookieStore = await cookies();
   const preferred = cookieStore.get(ACTIVE_COMPANY_COOKIE)?.value ?? null;
   return resolveActiveMembership(memberships, preferred);
@@ -103,6 +120,8 @@ export async function requireApprovedMembership(): Promise<Membership> {
 }
 
 export const getMfaState = cache(async (): Promise<MfaState> => {
+  if (STATIC_PREVIEW) return { currentLevel: "aal1", nextLevel: "aal1" };
+
   const supabase = await createSessionClient();
   const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (error) throw error;
@@ -118,6 +137,17 @@ export const getMfaState = cache(async (): Promise<MfaState> => {
  * the database policy switch; RLS applies the same rule.
  */
 export const getStaffContext = cache(async (): Promise<StaffContext | null> => {
+  if (STATIC_PREVIEW) {
+    return {
+      staffUserId: DEMO_STAFF.staffUserId,
+      roleCode: DEMO_STAFF.roleCode,
+      roleName: DEMO_STAFF.roleName,
+      mfaVerified: false,
+      mfaRequired: false,
+      permissions: PERMISSION_CODES,
+    };
+  }
+
   await requireUser();
   const supabase = await createSessionClient();
   const { data, error } = await supabase.rpc("current_staff_context");

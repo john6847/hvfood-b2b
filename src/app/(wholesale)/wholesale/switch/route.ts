@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
+import { STATIC_PREVIEW } from "@/lib/env";
 import { ACTIVE_COMPANY_COOKIE, getMemberships } from "@/modules/identity/service";
 import { UnauthenticatedError } from "@/lib/errors";
 
@@ -12,6 +13,7 @@ const bodySchema = z.object({ companyId: z.uuid() });
 export async function POST(request: NextRequest) {
   const origin = request.nextUrl.origin;
   const back = new URL("/wholesale/dashboard", origin);
+  if (STATIC_PREVIEW) return NextResponse.redirect(back, { status: 303 });
 
   try {
     const form = await request.formData();

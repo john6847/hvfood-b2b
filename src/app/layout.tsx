@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PreviewBar } from "@/components/ui/preview-bar";
 import { brand } from "@/config/brand";
 import "./globals.css";
 
@@ -18,6 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <a href="#main" className="skip-link">
           Skip to content
         </a>
+        <PreviewBar />
         {children}
       </body>
     </html>

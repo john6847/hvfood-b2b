@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { PortalHeader } from "@/components/commerce/portal-header";
+import { STATIC_PREVIEW } from "@/lib/env";
 import { brand } from "@/config/brand";
 import {
   getActiveMembership,
@@ -32,6 +33,7 @@ export default async function WholesaleLayout({ children }: { children: React.Re
         active={active}
         personName={personName}
         approved={active?.companyStatus === "APPROVED"}
+        canSignOut={!STATIC_PREVIEW}
       />
       <main id="main" className="mx-auto w-full max-w-(--content-max) flex-1 px-6 py-8">
         {children}

@@ -1,4 +1,5 @@
 import { ButtonLink } from "@/components/ui/button";
+import { STATIC_PREVIEW } from "@/lib/env";
 import { Wordmark } from "@/components/ui/wordmark";
 import { brand } from "@/config/brand";
 
@@ -13,9 +14,15 @@ export default function HomePage() {
         <div className="mx-auto flex max-w-(--content-max) items-center justify-between px-6 py-5">
           <Wordmark />
           <nav className="flex items-center gap-3" aria-label="Primary">
-            <ButtonLink href="/login" variant="secondary" size="sm">
-              Sign in
-            </ButtonLink>
+            {STATIC_PREVIEW ? (
+              <ButtonLink href="/wholesale/dashboard" variant="secondary" size="sm">
+                Open the preview
+              </ButtonLink>
+            ) : (
+              <ButtonLink href="/login" variant="secondary" size="sm">
+                Sign in
+              </ButtonLink>
+            )}
             <ButtonLink href="/wholesale/apply" size="sm">
               Apply for wholesale
             </ButtonLink>
@@ -37,9 +44,15 @@ export default function HomePage() {
           <ButtonLink href="/wholesale/apply" size="lg">
             Apply for wholesale
           </ButtonLink>
-          <ButtonLink href="/login" variant="secondary" size="lg">
-            Approved customer sign in
-          </ButtonLink>
+          {STATIC_PREVIEW ? (
+            <ButtonLink href="/wholesale/dashboard" variant="secondary" size="lg">
+              Open the design preview
+            </ButtonLink>
+          ) : (
+            <ButtonLink href="/login" variant="secondary" size="lg">
+              Approved customer sign in
+            </ButtonLink>
+          )}
         </div>
 
         <dl className="mt-16 grid max-w-3xl gap-8 border-t border-border pt-8 sm:grid-cols-3">
