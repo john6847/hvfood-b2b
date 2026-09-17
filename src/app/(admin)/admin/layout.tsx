@@ -36,7 +36,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </p>
           ) : (
             <Link
-              href="/mfa"
+              href="/mfa?setup=1"
               className="flex items-center gap-2 text-xs text-foreground-muted hover:text-foreground"
             >
               <ShieldCheck className="size-3.5" aria-hidden />

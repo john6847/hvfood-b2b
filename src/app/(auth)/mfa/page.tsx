@@ -13,7 +13,11 @@ export const metadata: Metadata = { title: "Two-step verification" };
  * - a verified factor exists and the session is aal1: challenge it
  * - no factor yet: enroll one
  */
-export default async function MfaPage() {
+export default async function MfaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ setup?: string }>;
+}) {
   const user = await getCurrentUser();
   if (!user) redirect("/login?next=/admin");
 
@@ -22,6 +26,11 @@ export default async function MfaPage() {
 
   const mfa = await getMfaState();
   if (mfa.currentLevel === "aal2") redirect("/admin");
+
+  // While the switch is off, only show this page when deliberately opened
+  // from the admin ("set it up"), so stale tabs and bookmarks go to work.
+  const { setup } = await searchParams;
+  if (!staff.mfaRequired && setup !== "1") redirect("/admin");
 
   const mode = mfa.nextLevel === "aal2" ? "verify" : "enroll";
 
