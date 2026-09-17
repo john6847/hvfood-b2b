@@ -1,78 +1,64 @@
-import { z } from "zod";
+import { resolveAppUrl, resolveSupabaseMode } from "./resolve";
 
 /**
- * Environment access is centralized so a missing or malformed variable fails
- * with a clear message instead of deep inside a request.
+ * Environment access is centralized so configuration problems surface in
+ * one place with a clear message.
  *
- * The app runs in one of two modes, decided entirely by whether Supabase is
+ * The app runs in one of two modes, decided by whether Supabase is
  * configured:
  *
  * - **Connected**: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY
- *   are set. Real authentication, real data, RLS in force.
- * - **Static preview**: neither is set. The app serves fixtures so the design
- *   can be reviewed and deployed without a database. No sign-in, no writes.
+ *   are both set. Real authentication, real data, RLS in force.
+ * - **Static preview**: neither is set. The app serves fixtures so the
+ *   design can be reviewed and deployed without a database.
  *
- * Static preview is never a fallback for a failed connection: if Supabase is
- * configured at all, every request goes through it and a misconfiguration is
- * an error rather than a silent downgrade to fake data.
+ * Nothing here throws while the module loads: a bad value must never be
+ * able to fail a build. Half-configured Supabase is reported when a
+ * database client is actually requested, so it can never quietly downgrade
+ * to fake data.
  */
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// Next.js inlines NEXT_PUBLIC_* only when referenced explicitly by name.
+const mode = resolveSupabaseMode({
+  url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+});
 
 /** True when no Supabase project is configured for this deployment. */
-export const STATIC_PREVIEW = !supabaseUrl && !supabaseAnonKey;
-
-const appUrlSchema = z.url().default("http://localhost:3000");
+export const STATIC_PREVIEW = mode.kind === "static";
 
 export const publicEnv = {
-  NEXT_PUBLIC_APP_URL: appUrlSchema.parse(process.env.NEXT_PUBLIC_APP_URL ?? undefined),
+  NEXT_PUBLIC_APP_URL: resolveAppUrl({
+    appUrl: process.env.NEXT_PUBLIC_APP_URL,
+    vercelUrl: process.env.NEXT_PUBLIC_VERCEL_URL,
+  }),
 } as const;
 
-const supabaseSchema = z.object({
-  url: z.url("NEXT_PUBLIC_SUPABASE_URL must be a URL"),
-  anonKey: z.string().min(1, "NEXT_PUBLIC_SUPABASE_ANON_KEY is required"),
-});
-
-let cachedSupabaseEnv: z.infer<typeof supabaseSchema> | null = null;
-
 /**
- * Supabase connection details. Throws in static preview, so any code path
- * that reaches a database client without a project configured fails loudly
- * rather than returning empty results.
+ * Supabase connection details. Throws when the app is not connected, so
+ * any code path that reaches a database client without a project
+ * configured fails loudly rather than returning empty results.
  */
 export function supabaseEnv() {
-  if (STATIC_PREVIEW) {
+  if (mode.kind === "connected") return { url: mode.url, anonKey: mode.anonKey };
+
+  if (mode.kind === "incomplete") {
     throw new Error(
-      "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, " +
-        "or use the static preview paths that do not touch the database.",
+      `Supabase is partly configured. Fix or remove: ${mode.missing.join(", ")}. ` +
+        "Set both variables to connect, or neither to run the static preview.",
     );
   }
-  if (!cachedSupabaseEnv) {
-    const result = supabaseSchema.safeParse({ url: supabaseUrl, anonKey: supabaseAnonKey });
-    if (!result.success) {
-      const issues = result.error.issues.map((i) => i.message).join("; ");
-      throw new Error(`Invalid Supabase environment: ${issues}`);
-    }
-    cachedSupabaseEnv = result.data;
-  }
-  return cachedSupabaseEnv;
+
+  throw new Error(
+    "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, " +
+      "or use the static preview paths that do not touch the database.",
+  );
 }
-
-const serverSchema = z.object({
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
-});
-
-let cachedServerEnv: z.infer<typeof serverSchema> | null = null;
 
 export function serverEnv() {
   if (typeof window !== "undefined") {
     throw new Error("serverEnv() was called in the browser");
   }
-  if (!cachedServerEnv) {
-    cachedServerEnv = serverSchema.parse({
-      SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
-    });
-  }
-  return cachedServerEnv;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  return { SUPABASE_SERVICE_ROLE_KEY: key ? key : undefined };
 }
