@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
+import { PortalFooter } from "@/components/commerce/portal-footer";
 import { PortalHeader } from "@/components/commerce/portal-header";
-import { STATIC_PREVIEW } from "@/lib/env";
-import { brand } from "@/config/brand";
 import {
   getActiveMembership,
   getCurrentUser,
@@ -33,21 +32,11 @@ export default async function WholesaleLayout({ children }: { children: React.Re
         active={active}
         personName={personName}
         approved={active?.companyStatus === "APPROVED"}
-        canSignOut={!STATIC_PREVIEW}
       />
-      <main id="main" className="mx-auto w-full max-w-(--content-max) flex-1 px-6 py-8">
+      <main id="main" className="mx-auto w-full max-w-(--content-max) flex-1 px-4 py-6 sm:px-6 sm:py-8">
         {children}
       </main>
-      <footer className="border-t border-border bg-surface">
-        <div className="mx-auto flex max-w-(--content-max) flex-wrap items-center justify-between gap-3 px-6 py-4 text-xs text-foreground-muted">
-          <span>
-            {brand.name}. {brand.tagline}
-          </span>
-          <span>
-            {brand.market} · {brand.currency}
-          </span>
-        </div>
-      </footer>
+      <PortalFooter />
     </div>
   );
 }

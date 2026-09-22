@@ -19,6 +19,11 @@
     "db:reset": "supabase db reset",
     "db:test": "supabase test db",
     "db:types": "supabase gen types typescript --local --schema public > src/lib/supabase/database.types.ts",
+    "db:verify": "node --experimental-strip-types --env-file=.env.local scripts/verify-connection.ts",
+    "buyer:create": "tsx --env-file=.env.local scripts/create-buyer.ts",
+    "admin:bootstrap": "tsx --env-file=.env.local scripts/bootstrap-admin.ts",
+    "catalog:seed": "tsx --env-file=.env.local scripts/seed-catalog.ts",
+    "payments:verify": "tsx --env-file=.env.local scripts/verify-payments.ts",
     "check": "npm run lint && npm run typecheck && npm run test"
   },
   "dependencies": {
@@ -33,6 +38,7 @@
     "react-dom": "19.2.8",
     "react-hook-form": "^7.88.0",
     "server-only": "^0.0.1",
+    "stripe": "^22.6.2",
     "tailwind-merge": "^3.7.0",
     "zod": "^4.6.5"
   },

@@ -96,7 +96,7 @@ export default async function AccountPage() {
               {(record?.members ?? []).map((m) => {
                 const name = [m.firstName, m.lastName].filter(Boolean).join(" ");
                 return (
-                  <li key={m.id} className="flex items-center justify-between gap-3 px-5 py-3">
+                  <li key={m.id} className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-foreground">
                         {name || m.email}
@@ -105,7 +105,7 @@ export default async function AccountPage() {
                         <p className="truncate text-xs text-foreground-muted">{m.email}</p>
                       ) : null}
                     </div>
-                    <StatusPill tone={m.role === "OWNER" ? "info" : "neutral"}>
+                    <StatusPill tone={m.role === "OWNER" ? "info" : "neutral"} className="shrink-0">
                       {roleLabel[m.role] ?? m.role}
                     </StatusPill>
                   </li>
@@ -127,7 +127,7 @@ export default async function AccountPage() {
           </PanelBody>
         ) : (
           <TableScroll>
-            <Table>
+            <Table className="min-w-[500px]">
               <thead>
                 <tr>
                   <Th>Label</Th>
@@ -183,7 +183,7 @@ export default async function AccountPage() {
           </PanelBody>
         ) : (
           <TableScroll>
-            <Table>
+            <Table className="min-w-[500px]">
               <thead>
                 <tr>
                   <Th>Location</Th>

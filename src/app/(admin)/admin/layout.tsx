@@ -29,10 +29,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="flex min-h-full flex-1 flex-col lg:flex-row">
       <AdminSidebar items={items} staffName={staffName} roleName={staff.roleName} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center justify-between gap-4 border-b border-border bg-surface px-6 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-surface px-4 py-2.5 sm:px-6 sm:py-3">
           {STATIC_PREVIEW ? (
             <p className="text-xs text-foreground-muted">
-              Sample operations data. Sign-in and staff roles activate with the database.
+              Sample operations data. Staff roles and two-step verification activate with the database.
             </p>
           ) : staff.mfaVerified ? (
             <p className="flex items-center gap-2 text-xs text-foreground-muted">
@@ -48,16 +48,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               Two-step verification is optional right now. Set it up
             </Link>
           )}
-          {STATIC_PREVIEW ? null : (
-            <form action="/auth/signout" method="post">
-              <Button type="submit" variant="ghost" size="sm">
-                <LogOut aria-hidden />
-                Sign out
-              </Button>
-            </form>
-          )}
+          <form action="/auth/signout" method="post">
+            <Button type="submit" variant="ghost" size="sm">
+              <LogOut aria-hidden />
+              <span className="hidden sm:inline">Sign out</span>
+            </Button>
+          </form>
         </div>
-        <main id="main" className="flex-1 px-6 py-8">
+        <main id="main" className="flex-1 px-4 py-6 sm:px-6 sm:py-8">
           <div className="mx-auto max-w-(--content-max)">{children}</div>
         </main>
       </div>

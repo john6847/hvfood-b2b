@@ -110,7 +110,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
                           {a.line2 ? `, ${a.line2}` : ""}, {a.city}, {a.region} {a.postalCode}
                         </p>
                       </div>
-                      <span className="flex gap-1">
+                      <span className="flex shrink-0 gap-1">
                         {a.isBilling ? <StatusPill tone="info">Billing</StatusPill> : null}
                         {a.isDefaultShipping ? (
                           <StatusPill tone="success">Default shipping</StatusPill>
@@ -144,7 +144,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
                           .join(" · ")}
                       </p>
                       {l.receivingInstructions ? (
-                        <p className="mt-1 text-foreground-muted">{l.receivingInstructions}</p>
+                        <p className="mt-1 text-foreground-muted break-words">{l.receivingInstructions}</p>
                       ) : null}
                     </li>
                   ))}
@@ -164,7 +164,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
                   return (
                     <li
                       key={m.id}
-                      className="flex items-center justify-between gap-3 px-5 py-3 text-sm"
+                      className="flex items-center justify-between gap-3 px-4 py-3 text-sm sm:px-5"
                     >
                       <div className="min-w-0">
                         <p className="truncate font-medium text-foreground">{name || m.email}</p>
@@ -172,6 +172,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
                       </div>
                       <StatusPill
                         tone={m.active ? (m.role === "OWNER" ? "info" : "neutral") : "danger"}
+                        className="shrink-0"
                       >
                         {m.active ? m.role.toLowerCase() : "inactive"}
                       </StatusPill>

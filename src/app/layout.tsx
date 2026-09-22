@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { PreviewBar } from "@/components/ui/preview-bar";
 import { brand } from "@/config/brand";
 import "./globals.css";
@@ -12,9 +12,17 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="h-full">
+    // Browser extensions add inline styles to <html> before hydration. This only
+    // ignores attribute differences on this element, not on its children.
+    <html lang="en" className="h-full" suppressHydrationWarning>
       <body className="flex min-h-full flex-col">
         <a href="#main" className="skip-link">
           Skip to content

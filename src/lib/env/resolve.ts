@@ -55,20 +55,23 @@ export type SupabaseMode =
 export function resolveSupabaseMode(input: {
   url?: string | null;
   anonKey?: string | null;
+  publishableKey?: string | null;
 }): SupabaseMode {
   const url = cleanValue(input.url);
-  const anonKey = cleanValue(input.anonKey);
+  const clientKey = cleanValue(input.publishableKey) ?? cleanValue(input.anonKey);
 
-  if (!url && !anonKey) return { kind: "static" };
+  if (!url && !clientKey) return { kind: "static" };
 
   const missing: string[] = [];
   if (!url) missing.push("NEXT_PUBLIC_SUPABASE_URL");
-  if (!anonKey) missing.push("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  if (!clientKey) {
+    missing.push("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (or NEXT_PUBLIC_SUPABASE_ANON_KEY)");
+  }
 
   if (url && !/^https?:\/\//i.test(url)) {
     missing.push("NEXT_PUBLIC_SUPABASE_URL (must start with https://)");
   }
 
   if (missing.length > 0) return { kind: "incomplete", missing };
-  return { kind: "connected", url: url!, anonKey: anonKey! };
+  return { kind: "connected", url: url!, anonKey: clientKey! };
 }

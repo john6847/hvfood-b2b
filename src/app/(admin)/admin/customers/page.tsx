@@ -47,7 +47,7 @@ export default async function CustomersPage({
       />
 
       <Panel>
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
+        <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <nav aria-label="Status filter" className="flex flex-wrap gap-1">
             {STATUSES.map((value) => {
               const href =
@@ -59,8 +59,8 @@ export default async function CustomersPage({
                   href={href}
                   aria-current={current ? "page" : undefined}
                   className={cn(
-                    "rounded-md px-3 py-1.5 text-xs font-medium",
-                    current ? "bg-accent text-primary" : "text-foreground-muted hover:bg-muted",
+                    "rounded-md px-2.5 py-1 text-xs font-medium sm:px-3 sm:py-1.5",
+                    current ? "bg-accent text-primary font-semibold" : "text-foreground-muted hover:bg-muted",
                   )}
                 >
                   {value === "ALL" ? "All" : value.charAt(0) + value.slice(1).toLowerCase()}
@@ -68,7 +68,7 @@ export default async function CustomersPage({
               );
             })}
           </nav>
-          <form method="get" className="flex items-center gap-2">
+          <form method="get" className="flex w-full items-center gap-2 sm:w-auto">
             {status !== "ALL" ? <input type="hidden" name="status" value={status} /> : null}
             <label htmlFor="q" className="sr-only">
               Search customers
@@ -79,7 +79,7 @@ export default async function CustomersPage({
               type="search"
               defaultValue={params.q ?? ""}
               placeholder="Search name or email"
-              className="h-8 w-56 rounded-md border border-border bg-surface px-2 text-sm"
+              className="h-8 w-full rounded-md border border-border bg-surface px-2 text-xs sm:w-56 sm:text-sm"
             />
           </form>
         </div>
@@ -97,7 +97,7 @@ export default async function CustomersPage({
           </div>
         ) : (
           <TableScroll>
-            <Table>
+            <Table className="min-w-[560px]">
               <thead>
                 <tr>
                   <Th>Company</Th>

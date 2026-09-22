@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { STATIC_PREVIEW, supabaseEnv } from "@/lib/env";
+import { DEMO_SESSION_COOKIE, parseDemoAccountKey } from "@/modules/demo/session";
 
 /**
  * Refreshes the Supabase session cookie on every request and keeps
@@ -10,21 +11,31 @@ import { STATIC_PREVIEW, supabaseEnv } from "@/lib/env";
  * layout re-checks identity, membership and staff status server-side, and
  * every database read is governed by RLS.
  *
- * In static preview there is no session to refresh and nothing to protect,
- * so the request passes straight through.
+ * In static preview there is no Supabase session; the test account cookie
+ * (see modules/demo) stands in for it, with the same redirects.
  */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Products are public; the catalog pages decide who sees prices.
+  const publicWholesale = ["/wholesale/apply", "/wholesale/catalog", "/wholesale/products"].some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+
+  const protectedArea =
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/mfa") ||
+    (pathname.startsWith("/wholesale") && !publicWholesale);
+
   if (STATIC_PREVIEW) {
-    // Sign-in has no meaning without a database; send it to the portal.
-    if (pathname === "/login" || pathname === "/mfa") {
-      const url = request.nextUrl.clone();
-      url.pathname = "/wholesale/dashboard";
-      url.search = "";
-      return NextResponse.redirect(url);
+    const demoAccount = parseDemoAccountKey(request.cookies.get(DEMO_SESSION_COOKIE)?.value);
+    if (!demoAccount && protectedArea) return redirectToLogin(request);
+    if (demoAccount && (pathname === "/login" || pathname === "/")) {
+      return redirectTo(request, demoAccount === "admin" ? "/admin" : "/wholesale/dashboard");
     }
-    return NextResponse.next({ request });
+    const response = NextResponse.next({ request });
+    if (demoAccount) response.headers.set("Cache-Control", "private, no-store");
+    return response;
   }
 
   let response = NextResponse.next({ request });
@@ -52,23 +63,10 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const protectedArea =
-    pathname.startsWith("/admin") ||
-    pathname.startsWith("/mfa") ||
-    (pathname.startsWith("/wholesale") && !pathname.startsWith("/wholesale/apply"));
-
-  if (!user && protectedArea) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("next", pathname);
-    return NextResponse.redirect(url);
-  }
+  if (!user && protectedArea) return redirectToLogin(request);
 
   if (user && (pathname === "/login" || pathname === "/")) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/wholesale/dashboard";
-    url.search = "";
-    return NextResponse.redirect(url);
+    return redirectTo(request, "/wholesale/dashboard");
   }
 
   // Personalized responses must never be cached across users.
@@ -77,6 +75,21 @@ export async function proxy(request: NextRequest) {
   }
 
   return response;
+}
+
+function redirectToLogin(request: NextRequest) {
+  const url = request.nextUrl.clone();
+  url.pathname = "/login";
+  url.search = "";
+  url.searchParams.set("next", request.nextUrl.pathname);
+  return NextResponse.redirect(url);
+}
+
+function redirectTo(request: NextRequest, pathname: string) {
+  const url = request.nextUrl.clone();
+  url.pathname = pathname;
+  url.search = "";
+  return NextResponse.redirect(url);
 }
 
 export const config = {

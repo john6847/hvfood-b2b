@@ -6,7 +6,15 @@ import { cn } from "@/lib/utils";
  * tables stay usable on small screens instead of being squeezed.
  */
 export function TableScroll({ className, ...props }: React.ComponentProps<"div">) {
-  return <div className={cn("w-full overflow-x-auto", className)} {...props} />;
+  return (
+    <div
+      className={cn(
+        "w-full overflow-x-auto [touch-action:pan-x] overscroll-x-contain",
+        className,
+      )}
+      {...props}
+    />
+  );
 }
 
 export function Table({ className, ...props }: React.ComponentProps<"table">) {
@@ -23,7 +31,7 @@ export function Th({ className, ...props }: React.ComponentProps<"th">) {
     <th
       scope="col"
       className={cn(
-        "border-y border-border bg-surface-muted px-4 py-3 text-2xs font-semibold uppercase tracking-wider text-foreground-muted",
+        "border-y border-border bg-surface-muted px-3 py-2.5 text-2xs font-semibold uppercase tracking-wider text-foreground-muted sm:px-4 sm:py-3",
         className,
       )}
       {...props}
@@ -34,7 +42,10 @@ export function Th({ className, ...props }: React.ComponentProps<"th">) {
 export function Td({ className, ...props }: React.ComponentProps<"td">) {
   return (
     <td
-      className={cn("border-b border-border px-4 py-3.5 align-middle text-foreground", className)}
+      className={cn(
+        "border-b border-border px-3 py-3 align-middle text-foreground sm:px-4 sm:py-3.5",
+        className,
+      )}
       {...props}
     />
   );

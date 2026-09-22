@@ -41,21 +41,46 @@ describe("resolveSupabaseMode", () => {
     expect(resolveSupabaseMode({ url: "", anonKey: "  " }).kind).toBe("static");
   });
 
-  it("is connected when both are set", () => {
+  it("is connected when both are set with anonKey", () => {
     const mode = resolveSupabaseMode({ url: "https://p.supabase.co", anonKey: "key" });
     expect(mode).toEqual({ kind: "connected", url: "https://p.supabase.co", anonKey: "key" });
+  });
+
+  it("is connected when publishableKey is set", () => {
+    const mode = resolveSupabaseMode({
+      url: "https://p.supabase.co",
+      publishableKey: "sb_publishable_123",
+    });
+    expect(mode).toEqual({
+      kind: "connected",
+      url: "https://p.supabase.co",
+      anonKey: "sb_publishable_123",
+    });
+  });
+
+  it("prefers publishableKey over legacy anonKey", () => {
+    const mode = resolveSupabaseMode({
+      url: "https://p.supabase.co",
+      anonKey: "legacy_anon",
+      publishableKey: "sb_publishable_new",
+    });
+    expect(mode).toEqual({
+      kind: "connected",
+      url: "https://p.supabase.co",
+      anonKey: "sb_publishable_new",
+    });
   });
 
   it("reports a half-configured project instead of faking data", () => {
     const mode = resolveSupabaseMode({ url: "https://p.supabase.co" });
     expect(mode.kind).toBe("incomplete");
     if (mode.kind === "incomplete") {
-      expect(mode.missing).toContain("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+      expect(mode.missing[0]).toContain("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY");
     }
   });
 
   it("rejects a URL without a scheme", () => {
-    const mode = resolveSupabaseMode({ url: "p.supabase.co", anonKey: "key" });
+    const mode = resolveSupabaseMode({ url: "p.supabase.co", publishableKey: "sb_publishable_123" });
     expect(mode.kind).toBe("incomplete");
   });
 });

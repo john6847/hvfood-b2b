@@ -54,7 +54,7 @@ export default async function AdminHomePage() {
         action={<p className="text-sm text-foreground-muted">{today}</p>}
       />
 
-      <div className="grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2 lg:grid-cols-4">
         <Metric
           label="Orders needing action"
           value={canSeeOrders ? String(needsAction.length) : null}
@@ -79,7 +79,7 @@ export default async function AdminHomePage() {
         />
       </div>
 
-      <Panel className="mt-8">
+      <Panel className="mt-6 sm:mt-8">
         <PanelHeader
           title="Recent orders"
           description="Latest wholesale orders with payment and fulfillment state."
@@ -118,7 +118,7 @@ export default async function AdminHomePage() {
             <PanelBody className="p-0">
               <ul className="divide-y divide-border">
                 {applications.map((a) => (
-                  <li key={a.id} className="flex items-center justify-between gap-3 px-5 py-3">
+                  <li key={a.id} className="flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-foreground">
                         {a.businessName}
@@ -149,12 +149,12 @@ export default async function AdminHomePage() {
                 ["Stripe", "Cards and ACH"],
                 ["ShipStation", "Fulfillment"],
               ].map(([name, purpose]) => (
-                <li key={name} className="flex items-center justify-between px-5 py-3 text-sm">
+                <li key={name} className="flex items-center justify-between px-4 py-3 text-sm sm:px-5">
                   <span>
                     <span className="font-medium text-foreground">{name}</span>
                     <span className="text-foreground-muted"> · {purpose}</span>
                   </span>
-                  <StatusPill tone="neutral">Not connected</StatusPill>
+                  <StatusPill tone="neutral" className="shrink-0">Not connected</StatusPill>
                 </li>
               ))}
             </ul>
@@ -186,16 +186,16 @@ function Metric({
   const body = (
     <>
       <p className="text-xs text-foreground-muted">{label}</p>
-      <p className="tabular mt-3 text-xl font-semibold tracking-tight text-foreground">
+      <p className="tabular mt-2 sm:mt-3 text-xl font-semibold tracking-tight text-foreground">
         {value === null ? <span className="text-foreground-subtle">–</span> : value}
       </p>
-      <p className="mt-2 flex items-center gap-1 text-xs text-foreground-subtle">
+      <p className="mt-1.5 sm:mt-2 flex items-center gap-1 text-xs text-foreground-subtle">
         {note}
         {href ? <ArrowRight className="size-3" aria-hidden /> : null}
       </p>
     </>
   );
-  const className = "block bg-surface p-5";
+  const className = "block bg-surface p-4 sm:p-5";
   return href ? (
     <Link href={href} className={`${className} hover:bg-surface-muted`}>
       {body}

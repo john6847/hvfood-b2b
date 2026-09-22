@@ -1,9 +1,12 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createSessionClient } from "@/lib/supabase/server";
-import { publicEnv } from "@/lib/env";
+import { STATIC_PREVIEW, publicEnv } from "@/lib/env";
+import { verifyDemoCredentials } from "@/modules/demo/accounts";
+import { DEMO_SESSION_COOKIE } from "@/modules/demo/session";
 import { safeNextPath } from "@/lib/utils";
 import { getMfaState, getStaffContext } from "@/modules/identity/service";
 
@@ -50,6 +53,21 @@ export async function signIn(_prev: FormState, formData: FormData): Promise<Form
     return { fieldErrors };
   }
 
+  if (STATIC_PREVIEW) {
+    const account = verifyDemoCredentials(parsed.data.email, parsed.data.password);
+    if (!account) return { error: "Email or password is incorrect." };
+    const cookieStore = await cookies();
+    cookieStore.set(DEMO_SESSION_COOKIE, account.key, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+    });
+    // Test accounts land in their own area unless a page asked to come back.
+    const home = account.key === "admin" ? "/admin" : "/wholesale/dashboard";
+    redirect(safeNextPath(parsed.data.next, home));
+  }
+
   const supabase = await createSessionClient();
   const { error } = await supabase.auth.signInWithPassword({
     email: parsed.data.email,
@@ -64,6 +82,10 @@ export async function signIn(_prev: FormState, formData: FormData): Promise<Form
 }
 
 export async function signOut() {
+  if (STATIC_PREVIEW) {
+    (await cookies()).delete(DEMO_SESSION_COOKIE);
+    redirect("/login");
+  }
   const supabase = await createSessionClient();
   await supabase.auth.signOut();
   redirect("/login");

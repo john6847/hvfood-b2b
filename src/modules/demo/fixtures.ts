@@ -18,19 +18,11 @@ import type {
 import type { Membership } from "@/modules/identity/company-access";
 import { casePriceForQuantity, findProductBySlug } from "@/modules/catalog/fixtures";
 
-export const DEMO_USER = {
-  id: "00000000-0000-4000-8000-000000000001",
-  email: "alex.morgan@horizonvertfoods.example",
+/** Stable user ids for the static preview test accounts (see ./accounts). */
+export const DEMO_USER_IDS = {
+  buyer: "00000000-0000-4000-8000-000000000001",
+  admin: "00000000-0000-4000-8000-000000000002",
 } as const;
-
-export const DEMO_PROFILE = {
-  id: DEMO_USER.id,
-  email: DEMO_USER.email,
-  first_name: "Alex",
-  last_name: "Morgan",
-  phone: null as string | null,
-  locale: "en-US",
-};
 
 const COMPANY_IDS = {
   jeans: "10000000-0000-4000-8000-000000000001",
@@ -322,9 +314,9 @@ export const DEMO_COMPANY_RECORDS = records;
 export const DEMO_STAFF_DIRECTORY: StaffMember[] = [
   {
     staffUserId: DEMO_STAFF.staffUserId,
-    firstName: "Alex",
-    lastName: "Morgan",
-    email: DEMO_USER.email,
+    firstName: "Horizon Vert",
+    lastName: "Admin",
+    email: "admin@horizonvertb2b.com",
     roleName: "Administrator",
     active: true,
     createdAt: "2026-01-08T09:00:00.000Z",

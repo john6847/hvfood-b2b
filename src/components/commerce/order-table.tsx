@@ -20,7 +20,7 @@ export function OrderTable({
 }) {
   return (
     <TableScroll>
-      <Table>
+      <Table className="min-w-[620px]">
         <thead>
           <tr>
             <Th>Order</Th>
@@ -61,9 +61,14 @@ export function OrderTable({
                 )}
               </Td>
               <Td>
-                <StatusPill tone={statusTone(order.paymentStatus)}>
-                  {paymentLabel(order.paymentStatus)}
+                <StatusPill tone={statusTone(order.paymentStatus, order.paymentMethod)}>
+                  {paymentLabel(order.paymentStatus, order.paymentMethod)}
                 </StatusPill>
+                {order.paymentMethod ? (
+                  <span className="block text-3xs text-foreground-muted mt-0.5">
+                    {order.paymentMethod === "CARD" ? "Card" : order.paymentMethod === "ACH" ? "ACH" : "Wire"}
+                  </span>
+                ) : null}
               </Td>
               <Td>
                 <StatusPill tone={statusTone(order.status)}>{orderLabel(order.status)}</StatusPill>

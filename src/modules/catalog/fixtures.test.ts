@@ -4,6 +4,8 @@ import {
   catalogProducts,
   filterCatalog,
   findProductBySlug,
+  hasPricing,
+  withoutPricing,
 } from "./fixtures";
 
 describe("catalog fixtures", () => {
@@ -32,5 +34,16 @@ describe("catalog fixtures", () => {
     expect(asc[0]?.slug).toBe("cornmeal");
     const byName = filterCatalog(catalogProducts, { sort: "name" });
     expect(byName[0]?.name).toBe("Breadfruit Flour");
+  });
+});
+
+describe("withoutPricing", () => {
+  it("removes every price field so nothing priced reaches a visitor", () => {
+    for (const product of catalogProducts) {
+      const open = withoutPricing(product);
+      expect(hasPricing(open)).toBe(false);
+      expect(JSON.stringify(open)).not.toMatch(/price|volumeBreaks/i);
+      expect(open.name).toBe(product.name);
+    }
   });
 });

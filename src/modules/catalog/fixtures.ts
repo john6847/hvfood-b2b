@@ -7,8 +7,9 @@
  * real retail images from horizonvertfoods.com. SKUs, case packs, prices,
  * volume breaks and availability are illustrative.
  *
- * Money is integer cents. Prices are only rendered to approved members;
- * the catalog route enforces that before importing this module's data.
+ * Money is integer cents. Products are public; prices are only rendered to
+ * approved members. Routes pass `withoutPricing` records to anyone else so
+ * prices never reach their browser.
  */
 
 export type VolumeBreak = {
@@ -34,6 +35,22 @@ export type CatalogProduct = {
   tag?: string;
   description: string;
 };
+
+export type ProductPricing = Pick<CatalogProduct, "casePriceMinor" | "volumeBreaks">;
+
+/** A product with every price field removed, safe to send to any visitor. */
+export type PublicCatalogProduct = Omit<CatalogProduct, keyof ProductPricing>;
+
+export function hasPricing(product: CatalogProduct | PublicCatalogProduct): product is CatalogProduct {
+  return "casePriceMinor" in product;
+}
+
+export function withoutPricing(product: CatalogProduct | PublicCatalogProduct): PublicCatalogProduct {
+  if (!hasPricing(product)) return product;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { casePriceMinor, volumeBreaks, ...rest } = product;
+  return rest;
+}
 
 export const CATALOG_CATEGORIES = [
   "Rice & grains",
@@ -261,7 +278,10 @@ export type CatalogQuery = {
   sort?: CatalogSort;
 };
 
-export function filterCatalog(products: readonly CatalogProduct[], query: CatalogQuery) {
+export function filterCatalog<T extends CatalogProduct | PublicCatalogProduct>(
+  products: readonly T[],
+  query: CatalogQuery
+): T[] {
   const search = query.search?.trim().toLowerCase() ?? "";
   let result = products.filter((p) => {
     if (query.category && p.category !== query.category) return false;
@@ -276,10 +296,18 @@ export function filterCatalog(products: readonly CatalogProduct[], query: Catalo
 
   switch (query.sort) {
     case "price-asc":
-      result = [...result].sort((a, b) => a.casePriceMinor - b.casePriceMinor);
+      result = [...result].sort((a, b) => {
+        const aPrice = "casePriceMinor" in a ? a.casePriceMinor : 0;
+        const bPrice = "casePriceMinor" in b ? b.casePriceMinor : 0;
+        return aPrice - bPrice;
+      });
       break;
     case "price-desc":
-      result = [...result].sort((a, b) => b.casePriceMinor - a.casePriceMinor);
+      result = [...result].sort((a, b) => {
+        const aPrice = "casePriceMinor" in a ? a.casePriceMinor : 0;
+        const bPrice = "casePriceMinor" in b ? b.casePriceMinor : 0;
+        return bPrice - aPrice;
+      });
       break;
     case "name":
       result = [...result].sort((a, b) => a.name.localeCompare(b.name));
@@ -290,7 +318,7 @@ export function filterCatalog(products: readonly CatalogProduct[], query: Catalo
   return result;
 }
 
-export function categoryCounts(products: readonly CatalogProduct[]) {
+export function categoryCounts(products: readonly (CatalogProduct | PublicCatalogProduct)[]) {
   const counts = new Map<string, number>();
   for (const p of products) counts.set(p.category, (counts.get(p.category) ?? 0) + 1);
   return counts;

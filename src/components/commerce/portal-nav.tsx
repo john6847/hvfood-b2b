@@ -13,6 +13,7 @@ const approvedItems = [
 
 const limitedItems = [
   { href: "/wholesale/dashboard", label: "Account status" },
+  { href: "/wholesale/catalog", label: "Browse products" },
   { href: "/wholesale/account", label: "Company" },
 ];
 
@@ -21,7 +22,7 @@ export function PortalNav({ approved }: { approved: boolean }) {
   const items = approved ? approvedItems : limitedItems;
 
   return (
-    <nav aria-label="Wholesale" className="flex items-center gap-1 overflow-x-auto">
+    <nav aria-label="Wholesale" className="flex items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {items.map((item) => {
         const current = pathname === item.href || pathname.startsWith(`${item.href}/`);
         return (
@@ -30,7 +31,7 @@ export function PortalNav({ approved }: { approved: boolean }) {
             href={item.href}
             aria-current={current ? "page" : undefined}
             className={cn(
-              "inline-flex h-12 items-center whitespace-nowrap border-b-2 px-3 text-sm",
+              "inline-flex h-11 items-center whitespace-nowrap border-b-2 px-2.5 text-xs font-medium transition-colors sm:h-12 sm:px-3 sm:text-sm",
               current
                 ? "border-primary font-semibold text-primary"
                 : "border-transparent text-foreground-muted hover:text-foreground",

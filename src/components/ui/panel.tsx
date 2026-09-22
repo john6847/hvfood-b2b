@@ -23,11 +23,11 @@ export function PanelHeader({
   as?: "h1" | "h2" | "h3";
 }) {
   return (
-    <header className="flex flex-wrap items-start justify-between gap-4 border-b border-border px-5 py-4">
+    <header className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-3.5 sm:px-5 sm:py-4">
       <div>
         <Heading className="text-md font-semibold text-foreground">{title}</Heading>
         {description ? (
-          <p className="mt-1 text-sm text-foreground-muted">{description}</p>
+          <p className="mt-1 text-xs text-foreground-muted sm:text-sm">{description}</p>
         ) : null}
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}
@@ -36,7 +36,7 @@ export function PanelHeader({
 }
 
 export function PanelBody({ className, ...props }: React.ComponentProps<"div">) {
-  return <div className={cn("px-5 py-4", className)} {...props} />;
+  return <div className={cn("px-4 py-3.5 sm:px-5 sm:py-4", className)} {...props} />;
 }
 
 /** Key/value rows for record pages. */
@@ -49,8 +49,8 @@ export function DefinitionList({
     <dl className="divide-y divide-border">
       {items.map((item) => (
         <div key={item.term} className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-          <dt className="text-sm text-foreground-muted">{item.term}</dt>
-          <dd className="text-sm text-foreground sm:col-span-2">{item.value}</dd>
+          <dt className="text-xs font-medium text-foreground-muted sm:text-sm">{item.term}</dt>
+          <dd className="break-words text-sm text-foreground sm:col-span-2">{item.value}</dd>
         </div>
       ))}
     </dl>

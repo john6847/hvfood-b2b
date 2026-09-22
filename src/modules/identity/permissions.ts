@@ -56,6 +56,7 @@ export const ADMIN_NAVIGATION: ReadonlyArray<{
   anyOf: readonly Permission[];
 }> = [
   { href: "/admin", label: "Home", anyOf: [] },
+  { href: "/admin/applications", label: "Applications", anyOf: ["applications.review"] },
   { href: "/admin/orders", label: "Orders", anyOf: ["orders.read"] },
   { href: "/admin/products", label: "Products", anyOf: ["catalog.read"] },
   { href: "/admin/customers", label: "Customers", anyOf: ["accounts.read"] },

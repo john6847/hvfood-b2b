@@ -3,14 +3,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { Notice } from "@/components/ui/notice";
 import { PageHeading } from "@/components/ui/page-heading";
 import { DefinitionList, Panel, PanelBody, PanelHeader } from "@/components/ui/panel";
 import { StatusPill } from "@/components/ui/status-pill";
 import { Table, TableScroll, Td, Th, Tr } from "@/components/ui/data-table";
+import { WireReconcileAction } from "@/components/admin/wire-reconcile-action";
 import { formatDate, formatMinorUsd } from "@/lib/utils";
 import { guardPermission } from "@/modules/identity/guards";
-import { getOrder, orderLabel, paymentLabel, statusTone } from "@/modules/orders/queries";
+import { getOrder, orderLabel, paymentLabel, paymentMethodLabel, statusTone } from "@/modules/orders/queries";
 
 export async function generateMetadata({
   params,
@@ -21,7 +21,7 @@ export async function generateMetadata({
   return { title: `Order ${orderNumber}` };
 }
 
-/** Staff view of one order. Status changes arrive with the purchasing release. */
+/** Staff view of one order with multi-payment method tracking and wire reconciliation. */
 export default async function AdminOrderPage({
   params,
 }: {
@@ -31,6 +31,8 @@ export default async function AdminOrderPage({
   const { orderNumber } = await params;
   const order = await getOrder(orderNumber);
   if (!order) notFound();
+
+  const isWirePending = order.paymentMethod === "WIRE" && order.paymentStatus === "UNPAID";
 
   return (
     <>
@@ -48,24 +50,29 @@ export default async function AdminOrderPage({
         description={`Placed ${formatDate(order.placedAt)} by ${order.placedBy}.`}
         action={
           <span className="flex flex-wrap gap-2">
-            <StatusPill tone={statusTone(order.paymentStatus)}>
-              {paymentLabel(order.paymentStatus)}
+            <StatusPill tone={statusTone(order.paymentStatus, order.paymentMethod)}>
+              {paymentLabel(order.paymentStatus, order.paymentMethod)}
             </StatusPill>
             <StatusPill tone={statusTone(order.status)}>{orderLabel(order.status)}</StatusPill>
           </span>
         }
       />
 
-      <Notice tone="info" className="mb-6">
-        Status changes, fulfillment and refunds arrive with the purchasing and shipping releases.
-        They will run as server commands with permission checks and an audit record.
-      </Notice>
+      {isWirePending && order.id ? (
+        <div className="mb-6">
+          <WireReconcileAction
+            orderId={order.id}
+            orderNumber={order.orderNumber}
+            totalFormatted={formatMinorUsd(order.totalMinor)}
+          />
+        </div>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Panel className="lg:col-span-2">
           <PanelHeader title="Items" description={`${order.caseCount} cases`} />
           <TableScroll>
-            <Table>
+            <Table className="min-w-[480px]">
               <thead>
                 <tr>
                   <Th>Product</Th>
@@ -135,8 +142,15 @@ export default async function AdminOrderPage({
                 { term: "Placed by", value: order.placedBy },
                 { term: "Placed", value: formatDate(order.placedAt) },
                 { term: "PO number", value: order.poNumber ?? "Not provided" },
-                { term: "Payment", value: paymentLabel(order.paymentStatus) },
+                { term: "Payment method", value: paymentMethodLabel(order.paymentMethod) },
+                { term: "Payment status", value: paymentLabel(order.paymentStatus, order.paymentMethod) },
+                ...(order.wireReference
+                  ? [{ term: "Wire reference", value: <span className="font-mono">{order.wireReference}</span> }]
+                  : []),
                 { term: "Fulfillment", value: orderLabel(order.fulfillmentStatus) },
+                ...(order.internalNotes
+                  ? [{ term: "Internal notes", value: <span className="whitespace-pre-line text-xs font-mono">{order.internalNotes}</span> }]
+                  : []),
               ]}
             />
           </PanelBody>

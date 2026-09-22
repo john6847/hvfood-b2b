@@ -35,6 +35,19 @@ export function Select({ className, ...props }: React.ComponentProps<"select">) 
   );
 }
 
+export function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
+  return (
+    <textarea
+      className={cn(
+        "min-h-[80px] w-full rounded-md border border-border bg-surface p-3 text-base text-foreground placeholder:text-foreground-subtle focus-visible:border-border-strong",
+        "aria-[invalid=true]:border-danger-fg",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
 type FieldProps = {
   label: string;
   htmlFor: string;

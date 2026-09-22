@@ -70,8 +70,8 @@ export default async function OrdersPage({
                 href={href}
                 aria-current={current ? "page" : undefined}
                 className={cn(
-                  "rounded-md px-3 py-1.5 text-xs font-medium",
-                  current ? "bg-accent text-primary" : "text-foreground-muted hover:bg-muted",
+                  "rounded-md px-2.5 py-1 text-xs font-medium sm:px-3 sm:py-1.5",
+                  current ? "bg-accent text-primary font-semibold" : "text-foreground-muted hover:bg-muted",
                 )}
               >
                 {f.label}

@@ -44,7 +44,7 @@ export default async function SettingsPage() {
             </PanelBody>
           ) : (
             <TableScroll>
-              <Table>
+              <Table className="min-w-[480px]">
                 <thead>
                   <tr>
                     <Th>Name</Th>
@@ -82,7 +82,7 @@ export default async function SettingsPage() {
           <PanelBody className="p-0">
             <ul className="divide-y divide-border">
               {sections.map(([name, detail]) => (
-                <li key={name} className="px-5 py-3 text-sm">
+                <li key={name} className="px-4 py-3 text-sm sm:px-5">
                   <p className="font-medium text-foreground">{name}</p>
                   <p className="text-xs text-foreground-muted">{detail}</p>
                 </li>

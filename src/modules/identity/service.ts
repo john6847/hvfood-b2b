@@ -4,13 +4,14 @@ import { cookies } from "next/headers";
 import { STATIC_PREVIEW } from "@/lib/env";
 import { createSessionClient } from "@/lib/supabase/server";
 import { ForbiddenError, MfaRequiredError, UnauthenticatedError } from "@/lib/errors";
+import { findDemoAccount } from "@/modules/demo/accounts";
 import {
   DEMO_ACTIVE_COMPANY_ID,
   DEMO_MEMBERSHIPS,
-  DEMO_PROFILE,
   DEMO_STAFF,
-  DEMO_USER,
+  DEMO_USER_IDS,
 } from "@/modules/demo/fixtures";
+import { DEMO_SESSION_COOKIE, parseDemoAccountKey, type DemoAccountKey } from "@/modules/demo/session";
 import {
   resolveActiveMembership,
   type CompanyRole,
@@ -25,9 +26,11 @@ import { PERMISSION_CODES, hasPermission, type Permission } from "./permissions"
  * verified session and the database, never from client-supplied ids or
  * user metadata.
  *
- * In static preview (no Supabase configured) these return fixtures so the
- * design can be reviewed without a database. That path is unreachable the
- * moment a Supabase project is configured.
+ * In static preview (no Supabase configured) these return fixtures for
+ * whichever test account is signed in (see modules/demo), so the design can
+ * be reviewed without a database. The buyer belongs to an approved company;
+ * the admin is staff with no company. That path is unreachable the moment
+ * a Supabase project is configured.
  */
 
 export const ACTIVE_COMPANY_COOKIE = "hv_company";
@@ -49,8 +52,17 @@ export type MfaState = {
   nextLevel: "aal1" | "aal2";
 };
 
+/** The static preview test account signed in on this request, if any. */
+const getDemoAccountKey = cache(async (): Promise<DemoAccountKey | null> => {
+  const cookieStore = await cookies();
+  return parseDemoAccountKey(cookieStore.get(DEMO_SESSION_COOKIE)?.value);
+});
+
 export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
-  if (STATIC_PREVIEW) return { id: DEMO_USER.id, email: DEMO_USER.email };
+  if (STATIC_PREVIEW) {
+    const key = await getDemoAccountKey();
+    return key ? { id: DEMO_USER_IDS[key], email: findDemoAccount(key).email } : null;
+  }
 
   const supabase = await createSessionClient();
   const {
@@ -66,7 +78,19 @@ export async function requireUser(): Promise<SessionUser> {
 }
 
 export const getProfile = cache(async () => {
-  if (STATIC_PREVIEW) return DEMO_PROFILE;
+  if (STATIC_PREVIEW) {
+    const user = await requireUser();
+    const key = (await getDemoAccountKey())!;
+    const account = findDemoAccount(key);
+    return {
+      id: user.id,
+      email: account.email,
+      first_name: account.firstName,
+      last_name: account.lastName,
+      phone: null as string | null,
+      locale: "en-US",
+    };
+  }
 
   const user = await requireUser();
   const supabase = await createSessionClient();
@@ -81,9 +105,11 @@ export const getProfile = cache(async () => {
 
 /** Every active membership for the signed-in person. */
 export const getMemberships = cache(async (): Promise<Membership[]> => {
-  if (STATIC_PREVIEW) return DEMO_MEMBERSHIPS;
+  if (STATIC_PREVIEW) return (await getDemoAccountKey()) === "buyer" ? DEMO_MEMBERSHIPS : [];
 
-  await requireUser();
+  const user = await getCurrentUser();
+  if (!user) return [];
+
   const supabase = await createSessionClient();
   const { data, error } = await supabase.rpc("current_memberships");
   if (error) throw error;
@@ -101,6 +127,9 @@ export const getMemberships = cache(async (): Promise<Membership[]> => {
  * membership list from the database decides what is allowed.
  */
 export const getActiveMembership = cache(async (): Promise<Membership | null> => {
+  const user = await getCurrentUser();
+  if (!user) return null;
+
   const memberships = await getMemberships();
   if (STATIC_PREVIEW) {
     return resolveActiveMembership(memberships, DEMO_ACTIVE_COMPANY_ID);
@@ -138,6 +167,7 @@ export const getMfaState = cache(async (): Promise<MfaState> => {
  */
 export const getStaffContext = cache(async (): Promise<StaffContext | null> => {
   if (STATIC_PREVIEW) {
+    if ((await getDemoAccountKey()) !== "admin") return null;
     return {
       staffUserId: DEMO_STAFF.staffUserId,
       roleCode: DEMO_STAFF.roleCode,

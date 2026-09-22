@@ -22,6 +22,7 @@ import { resolveAppUrl, resolveSupabaseMode } from "./resolve";
 const mode = resolveSupabaseMode({
   url: process.env.NEXT_PUBLIC_SUPABASE_URL,
   anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  publishableKey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
 });
 
 /** True when no Supabase project is configured for this deployment. */
@@ -50,7 +51,7 @@ export function supabaseEnv() {
   }
 
   throw new Error(
-    "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, " +
+    "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (or NEXT_PUBLIC_SUPABASE_ANON_KEY), " +
       "or use the static preview paths that do not touch the database.",
   );
 }
@@ -59,6 +60,28 @@ export function serverEnv() {
   if (typeof window !== "undefined") {
     throw new Error("serverEnv() was called in the browser");
   }
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-  return { SUPABASE_SERVICE_ROLE_KEY: key ? key : undefined };
+  const key =
+    process.env.SUPABASE_SECRET_KEY?.trim() ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  return {
+    SUPABASE_SERVICE_ROLE_KEY: key ? key : undefined,
+    SUPABASE_SECRET_KEY: key ? key : undefined,
+  };
+}
+
+/**
+ * Stripe secret key, or null when Stripe is not configured. Only test-mode
+ * keys are accepted until the purchasing release: checkout is for trying
+ * the flow with test cards, and a live key here would take real money.
+ */
+export function stripeSecretKey(): string | null {
+  if (typeof window !== "undefined") {
+    throw new Error("stripeSecretKey() was called in the browser");
+  }
+  const key = process.env.STRIPE_SECRET_KEY?.trim();
+  if (!key) return null;
+  if (!key.startsWith("sk_test_") && !key.startsWith("rk_test_")) {
+    throw new Error("STRIPE_SECRET_KEY must be a test-mode key (sk_test_...). Live keys are not accepted yet.");
+  }
+  return key;
 }
